@@ -1,0 +1,96 @@
+import Link from "next/link";
+import { AppShell } from "@/components/app-shell";
+import { SummaryCard } from "@/components/summary-card";
+import { requirePlayerCharacter } from "@/lib/auth-helpers";
+
+export default async function DashboardPage() {
+  const context = await requirePlayerCharacter();
+  const { session, user, characters, currentCharacter } = context;
+
+  return (
+    <AppShell
+      title={`欢迎回来，${user.displayName}`}
+      description="这里是当前账号的主控制台。现在已经接入了登录、当前角色识别和首角色引导，后续会继续把商店与交易真正接上。"
+      badge={session.user.role === "ADMIN" ? "Admin Session" : "Player Session"}
+    >
+      <section className="grid gap-6 lg:grid-cols-3">
+        <SummaryCard
+          title="账号荣誉值"
+          value={String(user.honor)}
+          detail="荣誉值绑定账号，只允许管理员发放或调整。"
+        />
+        <SummaryCard
+          title="当前角色"
+          value={currentCharacter?.name ?? "未选择角色"}
+          detail="全局当前角色会影响背包、商店购买和玩家交易。"
+        />
+        <SummaryCard
+          title="可用角色数"
+          value={String(characters.length)}
+          detail="首版中角色支持新增与归档，不支持硬删除。"
+        />
+      </section>
+
+      <section className="mt-6 grid gap-6 xl:grid-cols-[1.1fr_0.9fr]">
+        <article className="panel rounded-[28px] p-6">
+          <div className="mb-4 flex items-center justify-between">
+            <div>
+              <h3 className="section-title text-2xl font-semibold">当前角色摘要</h3>
+              <p className="mt-2 text-sm leading-6 text-[var(--muted)]">
+                这里读取的是数据库里的真实角色信息，不再只是占位内容。
+              </p>
+            </div>
+            {currentCharacter ? (
+              <Link
+                href={`/characters/${currentCharacter.id}`}
+                className="focus-ring inline-flex rounded-full border border-[var(--border-strong)] px-4 py-2 text-sm font-semibold text-[var(--accent-strong)] hover:bg-[rgba(127,92,47,0.08)]"
+              >
+                进入角色页
+              </Link>
+            ) : null}
+          </div>
+
+          <div className="grid gap-4 sm:grid-cols-2">
+            <div className="rounded-[24px] border border-[var(--border-soft)] bg-[rgba(255,250,241,0.86)] p-5">
+              <p className="text-xs font-semibold uppercase tracking-[0.2em] text-[var(--color-ink-700)]">
+                当前金币
+              </p>
+              <p className="mt-3 text-3xl font-semibold text-[var(--color-ink-900)]">
+                {currentCharacter?.gold ?? 0}
+              </p>
+            </div>
+            <div className="rounded-[24px] border border-[var(--border-soft)] bg-[rgba(255,250,241,0.86)] p-5">
+              <p className="text-xs font-semibold uppercase tracking-[0.2em] text-[var(--color-ink-700)]">
+                当前声望
+              </p>
+              <p className="mt-3 text-3xl font-semibold text-[var(--color-ink-900)]">
+                {currentCharacter?.reputation ?? 0}
+              </p>
+            </div>
+          </div>
+        </article>
+
+        <article className="panel rounded-[28px] p-6">
+          <h3 className="section-title text-2xl font-semibold">快捷入口</h3>
+          <div className="mt-4 grid gap-3">
+            {[
+              { label: "角色管理", href: "/characters", detail: "切换当前角色，新增角色" },
+              { label: "玩家交易", href: "/market", detail: "后续接入真实挂单购买" },
+              { label: "公会商店", href: "/shops/guild", detail: "后续接入金币结算" },
+              { label: "荣誉商店", href: "/shops/honor", detail: "后续接入荣誉结算" },
+            ].map((item) => (
+              <Link
+                key={item.href}
+                href={item.href}
+                className="focus-ring rounded-2xl border border-[var(--border-soft)] bg-[rgba(255,250,241,0.82)] px-4 py-3 transition hover:border-[var(--border-strong)] hover:bg-[rgba(255,250,241,0.95)]"
+              >
+                <p className="text-sm font-semibold text-[var(--color-ink-900)]">{item.label}</p>
+                <p className="mt-1 text-sm text-[var(--muted)]">{item.detail}</p>
+              </Link>
+            ))}
+          </div>
+        </article>
+      </section>
+    </AppShell>
+  );
+}

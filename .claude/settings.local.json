@@ -1,0 +1,7 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(find . -name \"package.json\" -o -name \"*.config.js\" -o -name \"*.config.ts\" 2>/dev/null | head -10)"
+    ]
+  }
+}

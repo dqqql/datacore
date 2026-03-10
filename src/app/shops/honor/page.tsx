@@ -1,0 +1,72 @@
+import { AppShell } from "@/components/app-shell";
+import { ShopPage } from "@/components/shop-page";
+import { ensureDefaultShops } from "@/lib/bootstrap-shops";
+import { requirePlayerCharacter } from "@/lib/auth-helpers";
+import { prisma } from "@/lib/prisma";
+
+type HonorShopPageProps = {
+  searchParams: Promise<{
+    shopError?: string;
+    shopSuccess?: string;
+  }>;
+};
+
+const honorShopMessages = {
+  invalidPurchase: "购买失败，请检查角色、商品和数量后重试。",
+  unavailable: "该荣誉商品当前不可购买，请刷新后重试。",
+  insufficientHonor: "当前账号荣誉值不足，无法完成这次购买。",
+  completed: "购买成功，荣誉商店物品已写入当前角色背包。",
+} as const;
+
+export default async function HonorShopPage({ searchParams }: HonorShopPageProps) {
+  await ensureDefaultShops();
+
+  const query = await searchParams;
+  const { user, currentCharacter } = await requirePlayerCharacter();
+
+  const shop = await prisma.shop.findUnique({
+    where: { slug: "honor" },
+    include: {
+      items: {
+        where: { isActive: true },
+        orderBy: [{ category: "asc" }, { sortOrder: "asc" }, { createdAt: "asc" }],
+      },
+    },
+  });
+
+  const shopErrorMessage =
+    query.shopError === "invalid-purchase"
+      ? honorShopMessages.invalidPurchase
+      : query.shopError === "purchase-unavailable"
+        ? honorShopMessages.unavailable
+        : query.shopError === "insufficient-honor"
+          ? honorShopMessages.insufficientHonor
+          : null;
+
+  const shopSuccessMessage =
+    query.shopSuccess === "purchase-completed" ? honorShopMessages.completed : null;
+
+  return (
+    <AppShell
+      title="荣誉商店"
+      description="荣誉商店现在已经接入真实商品与购买动作。结算货币固定为账号荣誉值，但购买结果仍然会进入当前角色背包。"
+      badge="Honor Shop"
+    >
+      <ShopPage
+        title="荣誉值结算的特殊商店"
+        badge="Honor Catalog"
+        description="荣誉值绑定账号，因此扣减发生在账号维度；物品归属仍然明确落到当前角色。"
+        currencyLabel="荣誉值"
+        balanceLabel="当前账号荣誉值"
+        balanceValue={user.honor}
+        shopPath="/shops/honor"
+        shopName={shop?.name ?? "荣誉商店"}
+        shopDescription={shop?.description}
+        items={shop?.items ?? []}
+        currentCharacter={currentCharacter ? { id: currentCharacter.id, name: currentCharacter.name } : null}
+        errorMessage={shopErrorMessage}
+        successMessage={shopSuccessMessage}
+      />
+    </AppShell>
+  );
+}
