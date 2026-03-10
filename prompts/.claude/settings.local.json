@@ -1,0 +1,10 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(cd D:\\\\Dql\\\\Desktop\\\\data_core && mkdir -p doc)",
+      "Read(//d/Dql/Desktop/data_core/**)",
+      "Bash(mkdir -p doc)",
+      "Bash(cd .. && mkdir -p doc && ls -la)"
+    ]
+  }
+}
