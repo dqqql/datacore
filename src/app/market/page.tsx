@@ -14,14 +14,14 @@ type MarketPageProps = {
 };
 
 const marketMessages = {
-  invalidCancel: "下架失败，请刷新后重试。",
+  invalidCancel: "下架失败，请刷新页面后重试。",
   cancelUnavailable: "该挂单当前无法下架。",
-  invalidPurchase: "购买失败，请检查当前角色和挂单状态后重试。",
-  purchaseUnavailable: "该挂单当前不可购买，可能已经售出或被下架。",
+  invalidPurchase: "购买失败，请检查当前角色与挂单状态后重试。",
+  purchaseUnavailable: "该挂单当前不可购买，可能已售出或被下架。",
   selfPurchase: "不能购买自己上架的物品。",
-  insufficientGold: "当前角色金币不足，无法完成这次购买。",
-  cancelCompleted: "挂单已下架，物品回到卖方角色背包。",
-  purchaseCompleted: "购买成功，物品已自动转移到当前角色背包。",
+  insufficientGold: "当前角色金币不足，无法完成此次购买。",
+  cancelCompleted: "挂单已下架，物品已返回卖方角色背包。",
+  purchaseCompleted: "购买成功，物品已转入当前角色背包。",
 } as const;
 
 function formatPrice(value: number) {
@@ -67,9 +67,9 @@ export default async function MarketPage({ searchParams }: MarketPageProps) {
 
   return (
     <AppShell
-      title="玩家交易板块"
-      description="玩家交易现在已经接入真实挂单与自动成交。私人物品只能整条上架、整条购买，不支持议价和拍卖。"
-      badge="Market"
+      title="玩家交易市场"
+      description="玩家交易已接入真实挂单与自动成交。私人物品仅支持整单上架与整单购买，不开放议价或拍卖。"
+      badge="市场"
     >
       <section className="grid gap-6">
         <article className="panel rounded-[28px] p-6">
@@ -79,7 +79,8 @@ export default async function MarketPage({ searchParams }: MarketPageProps) {
                 自动成交的私人物品市场
               </h3>
               <p className="mt-3 text-sm leading-7 text-[var(--muted)]">
-                上架价格直接取物品当前单价。购买时系统会自动扣除买方角色金币、给卖方角色入账，并把物品转移到当前角色背包。
+                上架价格取物品当前单价。购买完成后，系统会自动扣除买方角色金币、
+                为卖方角色入账，并将物品转移至当前角色背包。
               </p>
             </div>
 
@@ -89,7 +90,7 @@ export default async function MarketPage({ searchParams }: MarketPageProps) {
                   当前角色
                 </p>
                 <p className="mt-1 text-sm font-semibold text-[var(--color-ink-900)]">
-                  {currentCharacter?.name ?? "暂无可购买角色"}
+                  {currentCharacter?.name ?? "暂无可用角色"}
                 </p>
               </div>
               <div className="rounded-2xl border border-[var(--border-soft)] bg-[rgba(255,250,241,0.82)] px-4 py-3">
@@ -102,10 +103,10 @@ export default async function MarketPage({ searchParams }: MarketPageProps) {
               </div>
               <div className="rounded-2xl border border-[var(--border-soft)] bg-[rgba(255,250,241,0.82)] px-4 py-3 sm:col-span-2">
                 <p className="text-xs font-semibold uppercase tracking-[0.18em] text-[var(--color-ink-700)]">
-                  当前规则
+                  交易规则
                 </p>
                 <p className="mt-1 text-sm leading-6 text-[var(--color-ink-900)]">
-                  只有私人物品可以上架市场。价格不能在线修改，填错只能先下架，再回角色页改价后重新上架。
+                  仅私人物品可在市场上架。价格不可在线修改，若录入有误，请先下架后返回角色页修正并重新上架。
                 </p>
               </div>
             </div>
@@ -129,7 +130,7 @@ export default async function MarketPage({ searchParams }: MarketPageProps) {
             <div>
               <h3 className="section-title text-2xl font-semibold">当前在售挂单</h3>
               <p className="mt-2 text-sm leading-6 text-[var(--muted)]">
-                买卖都按当前挂单整条成交，不拆单，不议价。
+                所有交易均按当前挂单整单成交，不拆单，不议价。
               </p>
             </div>
             <span className="rounded-full border border-[var(--border-soft)] bg-[rgba(255,250,241,0.82)] px-3 py-1 text-xs font-semibold uppercase tracking-[0.2em] text-[var(--accent-strong)]">
@@ -141,11 +142,11 @@ export default async function MarketPage({ searchParams }: MarketPageProps) {
             <table>
               <thead>
                 <tr>
-                  <th>挂单</th>
+                  <th>挂单物品</th>
                   <th>卖方角色</th>
                   <th>价格</th>
                   <th>状态</th>
-                  <th>动作</th>
+                  <th>操作</th>
                 </tr>
               </thead>
               <tbody>
@@ -190,7 +191,7 @@ export default async function MarketPage({ searchParams }: MarketPageProps) {
                                 disabled={!currentCharacter}
                                 className="focus-ring inline-flex items-center justify-center rounded-full bg-[var(--accent)] px-4 py-2 text-sm font-semibold text-white shadow-[0_8px_18px_rgba(95,66,31,0.18)] hover:bg-[var(--accent-strong)] disabled:cursor-not-allowed disabled:bg-[var(--muted)]"
                               >
-                                自动购买
+                                立即购买
                               </button>
                             </form>
                           )}
@@ -201,7 +202,7 @@ export default async function MarketPage({ searchParams }: MarketPageProps) {
                 ) : (
                   <tr>
                     <td colSpan={5} className="text-sm leading-6 text-[var(--muted)]">
-                      当前还没有在售挂单。先回角色页录入私人物品并上架，这里就会出现真实市场数据。
+                      当前暂无在售挂单。你可以先在角色页录入私人物品并上架，市场数据会在此实时展示。
                     </td>
                   </tr>
                 )}

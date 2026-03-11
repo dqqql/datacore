@@ -10,21 +10,31 @@ type AdminUsersPageProps = {
     honorSuccess?: string;
     characterError?: string;
     characterSuccess?: string;
+    error?: string;
   }>;
 };
 
 const honorMessages = {
-  invalid: "荣誉值调整失败，请检查目标账号、变动值和原因后重试。",
+  invalid: "荣誉值调整失败，请检查目标账号、变动值与原因后重试。",
   notFound: "目标账号不存在，请刷新页面后重试。",
-  belowZero: "本次调整会让荣誉值变成负数，系统已阻止。",
+  belowZero: "本次调整会使荣誉值变为负数，系统已阻止。",
   success: "荣誉值调整完成，审计日志已同步记录。",
 } as const;
 
 const characterMessages = {
   invalid: "角色恢复失败，请刷新页面后重试。",
-  notFound: "目标角色不存在，或已经不是归档状态。",
-  restored: "角色已恢复，并会重新出现在玩家角色列表中。",
+  notFound: "目标角色不存在，或当前并非归档状态。",
+  restored: "角色已恢复，并重新出现在玩家角色列表中。",
 } as const;
+
+const userMessages = {
+  invalid: "账号创建失败，请检查账号名与初始密码后重试。",
+  exists: "该账号名已存在，请更换后重试。",
+} as const;
+
+function formatRole(role: string) {
+  return role === "ADMIN" ? "管理员" : "玩家";
+}
 
 export default async function AdminUsersPage({ searchParams }: AdminUsersPageProps) {
   await requireAdminSession();
@@ -49,8 +59,7 @@ export default async function AdminUsersPage({ searchParams }: AdminUsersPagePro
           ? honorMessages.belowZero
           : null;
 
-  const honorSuccessMessage =
-    query.honorSuccess === "honor-adjusted" ? honorMessages.success : null;
+  const honorSuccessMessage = query.honorSuccess === "honor-adjusted" ? honorMessages.success : null;
   const characterErrorMessage =
     query.characterError === "invalid-character-selection"
       ? characterMessages.invalid
@@ -59,19 +68,25 @@ export default async function AdminUsersPage({ searchParams }: AdminUsersPagePro
         : null;
   const characterSuccessMessage =
     query.characterSuccess === "character-restored" ? characterMessages.restored : null;
+  const userErrorMessage =
+    query.error === "invalid-user"
+      ? userMessages.invalid
+      : query.error === "user-exists"
+        ? userMessages.exists
+        : null;
 
   return (
     <AppShell
       title="账号与荣誉管理"
-      description="管理员现在已经可以查看真实账号数据、创建普通用户，并直接发放或扣减账号荣誉值。"
-      badge="Admin Users"
+      description="这里集中管理真实账号数据、普通玩家账号创建与账号荣誉值调整。"
+      badge="账号管理"
     >
       <section className="grid gap-6 xl:grid-cols-[1.1fr_0.9fr]">
         <article className="panel rounded-[28px] p-6">
           <div className="mb-4">
             <h3 className="section-title text-2xl font-semibold">账号列表</h3>
             <p className="mt-2 text-sm leading-6 text-[var(--muted)]">
-              当前列表已经读取真实数据库数据，也会展示归档角色，方便管理员执行恢复。
+              列表已接入真实数据库数据，并展示归档角色，方便管理员执行恢复操作。
             </p>
           </div>
 
@@ -92,7 +107,7 @@ export default async function AdminUsersPage({ searchParams }: AdminUsersPagePro
               <thead>
                 <tr>
                   <th>账号名</th>
-                  <th>角色权限</th>
+                  <th>权限</th>
                   <th>荣誉值</th>
                   <th>活跃角色数</th>
                   <th>归档角色</th>
@@ -106,7 +121,7 @@ export default async function AdminUsersPage({ searchParams }: AdminUsersPagePro
                   return (
                     <tr key={user.id}>
                       <td>{user.displayName}</td>
-                      <td>{user.role}</td>
+                      <td>{formatRole(user.role)}</td>
                       <td className="numeric">{user.honor}</td>
                       <td className="numeric">{activeCharacters.length}</td>
                       <td>
@@ -142,8 +157,14 @@ export default async function AdminUsersPage({ searchParams }: AdminUsersPagePro
         <article className="panel rounded-[28px] p-6">
           <h3 className="section-title text-2xl font-semibold">创建普通账号</h3>
           <p className="mt-2 text-sm leading-6 text-[var(--muted)]">
-            首版里账号名与显示名保持一致，创建出来的账号默认为普通玩家。
+            当前版本中，账号名与显示名保持一致，新建账号默认角色为普通玩家。
           </p>
+
+          {userErrorMessage ? (
+            <div className="mt-4 rounded-2xl border border-[rgba(165,63,43,0.24)] bg-[rgba(165,63,43,0.08)] px-4 py-3 text-sm leading-6 text-[var(--danger)]">
+              {userErrorMessage}
+            </div>
+          ) : null}
 
           <form action={createUserAction} className="mt-5 space-y-4">
             <div className="space-y-2">
@@ -187,7 +208,7 @@ export default async function AdminUsersPage({ searchParams }: AdminUsersPagePro
           <div className="mt-8 border-t border-[var(--border-soft)] pt-6">
             <h3 className="section-title text-2xl font-semibold">荣誉值调整</h3>
             <p className="mt-2 text-sm leading-6 text-[var(--muted)]">
-              荣誉值绑定账号，只允许管理员在这里发放或扣减。每次调整都会写入审计日志。
+              荣誉值绑定账号，仅允许管理员在此发放或扣减。每次调整都会记录审计日志。
             </p>
 
             {honorErrorMessage ? (

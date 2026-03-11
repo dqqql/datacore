@@ -12,7 +12,7 @@ type AdminPasswordsPageProps = {
 
 const otpMessages = {
   invalid: "密码池刷新失败，请检查生成数量后重试。",
-  success: "密码池已刷新，旧批次已经整体失效。",
+  success: "密码池已刷新，旧批次已整体失效。",
 } as const;
 
 export default async function AdminPasswordsPage({ searchParams }: AdminPasswordsPageProps) {
@@ -29,22 +29,20 @@ export default async function AdminPasswordsPage({ searchParams }: AdminPassword
     },
   });
 
-  const otpErrorMessage =
-    query.otpError === "invalid-count" ? otpMessages.invalid : null;
-  const otpSuccessMessage =
-    query.otpSuccess === "pool-refreshed" ? otpMessages.success : null;
+  const otpErrorMessage = query.otpError === "invalid-count" ? otpMessages.invalid : null;
+  const otpSuccessMessage = query.otpSuccess === "pool-refreshed" ? otpMessages.success : null;
 
   return (
     <AppShell
       title="一次性密码池"
-      badge="OTP Pool"
-      description="这里负责刷新公共商店条目修改用的一次性密码池。刷新后旧批次整体失效，新密码批次立刻生效。"
+      badge="密码池"
+      description="这里负责维护公共商店条目修改所需的一次性密码。刷新后旧批次立即失效，新批次即时生效。"
     >
       <section className="grid gap-6 xl:grid-cols-[0.95fr_1.05fr]">
         <article className="panel rounded-[28px] p-6">
           <h3 className="section-title text-2xl font-semibold">刷新密码池</h3>
           <p className="mt-2 text-sm leading-6 text-[var(--muted)]">
-            首版支持一次生成一整批密码。刷新动作会先停用当前全部活跃批次，再创建新的活跃批次。
+            当前版本支持按批次生成密码。刷新时会先停用全部活跃批次，再创建新的可用批次。
           </p>
 
           {otpErrorMessage ? (
@@ -89,7 +87,7 @@ export default async function AdminPasswordsPage({ searchParams }: AdminPassword
           <div className="mb-4">
             <h3 className="section-title text-2xl font-semibold">密码池批次</h3>
             <p className="mt-2 text-sm leading-6 text-[var(--muted)]">
-              当前优先展示批次状态、密码数量和最近几条密码，方便管理员快速确认新批次已生效。
+              这里展示各批次状态、密码数量与最近生成的密码，便于管理员确认新批次是否生效。
             </p>
           </div>
 
@@ -106,15 +104,13 @@ export default async function AdminPasswordsPage({ searchParams }: AdminPassword
                   >
                     <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
                       <div>
-                        <p className="text-sm font-semibold text-[var(--color-ink-900)]">
-                          批次：{pool.id}
-                        </p>
+                        <p className="text-sm font-semibold text-[var(--color-ink-900)]">批次：{pool.id}</p>
                         <p className="mt-1 text-sm leading-6 text-[var(--muted)]">
                           创建人：{pool.createdByUser.displayName}
                         </p>
                       </div>
                       <span className="rounded-full border border-[var(--border-soft)] bg-[rgba(127,92,47,0.08)] px-3 py-1 text-xs font-semibold uppercase tracking-[0.18em] text-[var(--accent-strong)]">
-                        {pool.isActive ? "ACTIVE" : "INACTIVE"}
+                        {pool.isActive ? "生效中" : "已失效"}
                       </span>
                     </div>
 
@@ -131,9 +127,7 @@ export default async function AdminPasswordsPage({ searchParams }: AdminPassword
                         <p className="text-xs font-semibold uppercase tracking-[0.16em] text-[var(--color-ink-700)]">
                           已使用
                         </p>
-                        <p className="mt-1 text-sm font-semibold text-[var(--color-ink-900)]">
-                          {usedCount}
-                        </p>
+                        <p className="mt-1 text-sm font-semibold text-[var(--color-ink-900)]">{usedCount}</p>
                       </div>
                       <div className="rounded-2xl border border-[var(--border-soft)] bg-[rgba(255,250,241,0.84)] px-4 py-3">
                         <p className="text-xs font-semibold uppercase tracking-[0.16em] text-[var(--color-ink-700)]">
@@ -165,7 +159,7 @@ export default async function AdminPasswordsPage({ searchParams }: AdminPassword
               })
             ) : (
               <div className="rounded-2xl border border-[var(--border-soft)] bg-[rgba(255,250,241,0.84)] px-4 py-3 text-sm leading-6 text-[var(--muted)]">
-                当前还没有密码池，刷新一次后这里会显示真实批次。
+                当前尚无密码池。刷新一次后，这里会显示真实批次信息。
               </div>
             )}
           </div>

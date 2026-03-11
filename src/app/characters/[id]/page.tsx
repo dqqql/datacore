@@ -27,27 +27,42 @@ type CharacterDetailPageProps = {
 };
 
 const inventoryMessages = {
-  invalid: "私人物品录入失败，请检查名称、数量和单价后重试。",
+  invalid: "私人物品录入失败，请检查名称、数量与单价后重试。",
   created: "私人物品已写入当前角色背包。",
 } as const;
 
 const sellbackMessages = {
-  invalid: "回收失败，请检查物品和数量后重试。",
-  unavailable: "该物品当前不能卖回系统商店。",
+  invalid: "回收失败，请检查物品与数量后重试。",
+  unavailable: "该物品当前不可卖回系统商店。",
   tooMany: "回收数量不能超过背包中的现有数量。",
   completed: "回收成功，返还金额已写回对应货币。",
 } as const;
 
 const listingMessages = {
-  invalid: "上架或下架失败，请刷新后重试。",
-  unavailable: "该私人物品当前无法上架到市场。",
+  invalid: "上架或下架失败，请刷新页面后重试。",
+  unavailable: "该私人物品当前无法上架至市场。",
   cancelUnavailable: "该挂单当前无法下架。",
-  created: "私人物品已上架到玩家交易市场。",
-  cancelled: "挂单已下架，物品重新回到角色背包可操作状态。",
+  created: "私人物品已上架至玩家交易市场。",
+  cancelled: "挂单已下架，物品已返回角色背包并恢复可操作状态。",
 } as const;
 
 function formatOwnershipType(type: "PUBLIC" | "PRIVATE") {
   return type === "PRIVATE" ? "私人物品" : "公共物品";
+}
+
+function formatAuditAction(action: string) {
+  const labels: Record<string, string> = {
+    CHARACTER_GOLD_UPDATED: "金币调整",
+    CHARACTER_REPUTATION_UPDATED: "声望调整",
+    PRIVATE_ITEM_CREATED: "录入私人物品",
+    MARKET_LISTED: "市场上架",
+    MARKET_CANCELLED: "市场下架",
+    MARKET_PURCHASED: "市场成交",
+    SHOP_PURCHASED: "商店购买",
+    SHOP_SELLBACK: "商店回收",
+  };
+
+  return labels[action] ?? action;
 }
 
 function formatPrice(value: number) {
@@ -116,19 +131,20 @@ export default async function CharacterDetailPage({ params, searchParams }: Char
       : query.listingSuccess === "listing-cancelled"
         ? listingMessages.cancelled
         : null;
+
   const publicInventoryItems = character.inventoryItems.filter((item) => item.ownershipType === "PUBLIC");
 
   return (
     <AppShell
       title={`角色详情：${character.name}`}
-      description="这里集中处理当前角色的金币、声望、背包、私人物品交易和公共物品回收。"
-      badge="Character Detail"
+      description="这里集中处理当前角色的金币、声望、背包、私人物品交易与公共物品回收。"
+      badge="角色详情"
     >
       <section className="grid gap-6 xl:grid-cols-[0.95fr_1.05fr]">
         <article className="panel rounded-[28px] p-6">
-          <h3 className="section-title text-2xl font-semibold">经济数值</h3>
+          <h3 className="section-title text-2xl font-semibold">经济数据</h3>
           <p className="mt-2 text-sm leading-6 text-[var(--muted)]">
-            金币和声望允许玩家自行填写，但每次修改都会进入后台审计日志。
+            金币与声望允许玩家自行维护，但每次修改都会写入后台审计日志。
           </p>
 
           <form action={updateCharacterEconomyAction} className="mt-5 space-y-4">
@@ -166,7 +182,7 @@ export default async function CharacterDetailPage({ params, searchParams }: Char
               type="submit"
               className="focus-ring inline-flex w-full items-center justify-center rounded-full bg-[var(--accent)] px-4 py-3 text-sm font-semibold text-white shadow-[0_12px_24px_rgba(95,66,31,0.22)] hover:bg-[var(--accent-strong)]"
             >
-              保存角色数值
+              保存经济数据
             </button>
           </form>
         </article>
@@ -177,7 +193,7 @@ export default async function CharacterDetailPage({ params, searchParams }: Char
               <div>
                 <h3 className="section-title text-2xl font-semibold">背包概览</h3>
                 <p className="mt-2 text-sm leading-6 text-[var(--muted)]">
-                  背包现在读取的是数据库真实数据。当前先支持私人物品录入，方便从角色页直接管理背包内容。
+                  当前背包直接读取数据库中的真实数据。你可以在此管理私人物品、查看公共物品，并执行市场相关操作。
                 </p>
               </div>
 
@@ -241,9 +257,7 @@ export default async function CharacterDetailPage({ params, searchParams }: Char
                         </td>
                         <td>{formatOwnershipType(item.ownershipType)}</td>
                         <td className="numeric">{formatPrice(item.quantity)}</td>
-                        <td className="numeric">
-                          {formatPrice(item.sourceShopItem?.price ?? item.unitPrice)}
-                        </td>
+                        <td className="numeric">{formatPrice(item.sourceShopItem?.price ?? item.unitPrice)}</td>
                         <td>{item.isListed ? "已上架" : "背包中"}</td>
                         <td>
                           {item.ownershipType === "PRIVATE" ? (
@@ -287,7 +301,7 @@ export default async function CharacterDetailPage({ params, searchParams }: Char
                   ) : (
                     <tr>
                       <td colSpan={6} className="text-sm leading-6 text-[var(--muted)]">
-                        当前角色还没有背包物品。你可以先在下面录入私人物品，后续公共商店购买结果也会落到这里。
+                        当前角色尚无背包物品。你可以先在下方录入私人物品，后续商店购买所得也会自动写入此处。
                       </td>
                     </tr>
                   )}
@@ -299,7 +313,7 @@ export default async function CharacterDetailPage({ params, searchParams }: Char
           <article className="panel rounded-[28px] p-6">
             <h3 className="section-title text-2xl font-semibold">录入私人物品</h3>
             <p className="mt-2 text-sm leading-6 text-[var(--muted)]">
-              这一轮先按 MVP 收敛为名称、描述、数量和单价四个字段，保证玩家能从角色页直接补齐背包内容。
+              当前版本保留最小闭环，仅录入名称、描述、数量与单价四项基础信息，以确保背包与交易流程完整可用。
             </p>
 
             <form action={createPrivateItemAction} className="mt-5 space-y-4">
@@ -317,7 +331,7 @@ export default async function CharacterDetailPage({ params, searchParams }: Char
                     required
                     maxLength={60}
                     className="focus-ring w-full rounded-2xl border border-[var(--border-strong)] bg-[rgba(255,250,241,0.95)] px-4 py-3 text-sm text-[var(--color-ink-900)]"
-                    placeholder="例如：裂纹护符"
+                    placeholder="例如：裹纹护符"
                   />
                 </div>
 
@@ -366,7 +380,7 @@ export default async function CharacterDetailPage({ params, searchParams }: Char
                     rows={4}
                     maxLength={240}
                     className="focus-ring w-full rounded-2xl border border-[var(--border-strong)] bg-[rgba(255,250,241,0.95)] px-4 py-3 text-sm leading-6 text-[var(--color-ink-900)]"
-                    placeholder="可选。补充来源、用途或辨识信息，方便后续背包和交易查看。"
+                    placeholder="可选。补充来源、用途或辨识信息，便于后续背包与交易查看。"
                   />
                 </div>
               </div>
@@ -379,7 +393,7 @@ export default async function CharacterDetailPage({ params, searchParams }: Char
                   type="submit"
                   className="focus-ring inline-flex items-center justify-center rounded-full bg-[var(--accent)] px-5 py-3 text-sm font-semibold text-white shadow-[0_12px_24px_rgba(95,66,31,0.22)] hover:bg-[var(--accent-strong)]"
                 >
-                  保存到背包
+                  写入背包
                 </button>
               </div>
             </form>
@@ -388,7 +402,7 @@ export default async function CharacterDetailPage({ params, searchParams }: Char
           <article className="panel rounded-[28px] p-6">
             <h3 className="section-title text-2xl font-semibold">公共物品回收</h3>
             <p className="mt-2 text-sm leading-6 text-[var(--muted)]">
-              只有公共物品可以卖回系统商店，回收金额按当前商店售价的一半计算，并直接返还到对应货币。
+              仅公共物品可卖回系统商店。回收金额按当前商店售价的一半计算，并直接返还至对应货币。
             </p>
 
             {sellbackErrorMessage ? (
@@ -411,7 +425,7 @@ export default async function CharacterDetailPage({ params, searchParams }: Char
                     <th>库存</th>
                     <th>当前单价</th>
                     <th>回收单价</th>
-                    <th>动作</th>
+                    <th>操作</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -463,7 +477,7 @@ export default async function CharacterDetailPage({ params, searchParams }: Char
                   ) : (
                     <tr>
                       <td colSpan={5} className="text-sm leading-6 text-[var(--muted)]">
-                        当前角色还没有可回收的公共物品。后续从公会商店或荣誉商店购买后，会在这里出现对应条目。
+                        当前角色尚无可回收的公共物品。后续从公会商店或荣誉商店购入后，会在此显示对应条目。
                       </td>
                     </tr>
                   )}
@@ -482,8 +496,8 @@ export default async function CharacterDetailPage({ params, searchParams }: Char
               <tr>
                 <th>时间</th>
                 <th>动作</th>
-                <th>改前</th>
-                <th>改后</th>
+                <th>调整前</th>
+                <th>调整后</th>
                 <th>说明</th>
               </tr>
             </thead>
@@ -491,8 +505,10 @@ export default async function CharacterDetailPage({ params, searchParams }: Char
               {character.auditLogs.length > 0 ? (
                 character.auditLogs.map((log) => (
                   <tr key={log.id}>
-                    <td>{new Intl.DateTimeFormat("zh-CN", { dateStyle: "short", timeStyle: "short" }).format(log.createdAt)}</td>
-                    <td>{log.action}</td>
+                    <td>
+                      {new Intl.DateTimeFormat("zh-CN", { dateStyle: "short", timeStyle: "short" }).format(log.createdAt)}
+                    </td>
+                    <td>{formatAuditAction(log.action)}</td>
                     <td>{log.beforeValue ?? "-"}</td>
                     <td>{log.afterValue ?? "-"}</td>
                     <td>{log.note ?? "-"}</td>
@@ -501,7 +517,7 @@ export default async function CharacterDetailPage({ params, searchParams }: Char
               ) : (
                 <tr>
                   <td colSpan={5} className="text-sm text-[var(--muted)]">
-                    这个角色暂时还没有审计记录。
+                    该角色当前尚无审计记录。
                   </td>
                 </tr>
               )}

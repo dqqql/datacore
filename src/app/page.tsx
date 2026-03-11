@@ -4,18 +4,18 @@ import { SummaryCard } from "@/components/summary-card";
 import { TablePreview } from "@/components/table-preview";
 
 const launchChecklist = [
-  "账号由管理员创建，中文账号名与显示名保持一致",
-  "登录后强制创建首个角色，所有功能围绕当前角色展开",
-  "公共物品与私人物品严格分流，避免交易规则混乱",
-  "交易、回收、购买链路必须由数据库事务兜底",
+  "账号由管理员创建，账号名与显示名保持一致。",
+  "首次登录后需先创建首个角色，后续功能均围绕当前角色展开。",
+  "公共物品与私人物品严格分流，避免交易规则混用。",
+  "购买、回收与交易链路均由数据库事务保障一致性。",
 ];
 
 export default function Home() {
   return (
     <AppShell
       title="西征模式数据管理中心"
-      description="首版主流程已经跑通，当前阶段以上线前收尾、手工验收和细节校准为主。"
-      badge="MVP Ready"
+      description="当前版本已完成主流程闭环，现阶段以正式上线前的文案统一、规则复核与人工验收为主。"
+      badge="总览"
     >
       <div className="grid gap-6 xl:grid-cols-[1.25fr_0.95fr]">
         <section className="panel rounded-[28px] p-6">
@@ -24,35 +24,35 @@ export default function Home() {
               Current Focus
             </span>
             <h2 className="section-title text-4xl font-semibold text-[var(--color-ink-900)]">
-              以表格可读性为主的中世纪魔法数据台
+              以数据可读性为先的奇幻世界账簿
             </h2>
             <p className="max-w-2xl text-sm leading-7 text-[var(--muted)] sm:text-base">
-              风格保持克制，只用羊皮纸、铜金边框和淡淡的法术纹理做氛围，
-              不让视觉装饰压过数据本身。当前重点已经从搭骨架转到验收前收尾：
-              核对规则、收敛文案、确认交易与后台行为一致。
+              视觉风格保持克制，以羊皮纸、铜金边框与轻微法术纹理营造世界观氛围，
+              不让装饰遮蔽信息本身。当前重点已从功能搭建转向上线收口，
+              包括规则核对、文案统一与交易行为复验。
             </p>
           </div>
 
           <div className="mt-6 grid gap-4 md:grid-cols-2">
             <SummaryCard
-              title="当前部署路径"
+              title="部署方式"
               value="Windows 开发 / Ubuntu 22.04 部署"
-              detail="本地开发，推 GitHub，在服务器拉取后通过 Docker 构建。"
+              detail="本地开发、GitHub 同步，服务器侧通过 Docker 完成构建与发布。"
             />
             <SummaryCard
-              title="密码配置"
+              title="密码策略"
               value="独立挂载文件"
-              detail="管理员密码不固化在镜像里，方便你在服务器上直接维护。"
+              detail="管理员密码不固化在镜像中，便于在服务器环境中直接维护。"
             />
             <SummaryCard
               title="交易规则"
-              value="整条挂单，不做部分成交"
-              detail="私人物品整条上架，整条购买，先把数据一致性收稳。"
+              value="整单挂售，不支持拆分成交"
+              detail="私人物品整条上架、整条购买，以优先保障数据一致性。"
             />
             <SummaryCard
-              title="回收口径"
-              value="按当前商店半价"
-              detail="公共物品卖回商店时按当前售价一半计算，避免保存历史成交价。"
+              title="回收规则"
+              value="按当前售价半价回收"
+              detail="公共物品卖回系统商店时按现行售价的一半结算，不保留历史成交价。"
             />
           </div>
         </section>
@@ -60,9 +60,9 @@ export default function Home() {
         <section className="panel rounded-[28px] p-6">
           <div className="mb-4 flex items-center justify-between">
             <div>
-              <h3 className="section-title text-2xl font-semibold">首版启动清单</h3>
+              <h3 className="section-title text-2xl font-semibold">上线前检查清单</h3>
               <p className="mt-2 text-sm leading-6 text-[var(--muted)]">
-                这几条现在已经定死，后面开发默认按它们展开。
+                以下规则已确定，后续开发与验收默认以此为准。
               </p>
             </div>
             <Link
@@ -87,11 +87,11 @@ export default function Home() {
       </div>
 
       <section className="mt-6 panel rounded-[28px] p-6">
-          <div className="mb-4 flex flex-col gap-2 sm:flex-row sm:items-end sm:justify-between">
-            <div>
-            <h3 className="section-title text-2xl font-semibold">当前模块状态</h3>
+        <div className="mb-4 flex flex-col gap-2 sm:flex-row sm:items-end sm:justify-between">
+          <div>
+            <h3 className="section-title text-2xl font-semibold">核心模块状态</h3>
             <p className="mt-1 text-sm text-[var(--muted)]">
-              这里展示首版关键模块的当前落地情况，方便上线前快速核对。
+              这里汇总首版关键模块的落地情况，便于上线前快速复核。
             </p>
           </div>
           <span className="text-xs font-semibold uppercase tracking-[0.2em] text-[var(--accent-strong)]">
@@ -100,12 +100,12 @@ export default function Home() {
         </div>
 
         <TablePreview
-          columns={["模块", "主对象", "关键规则", "当前状态"]}
+          columns={["模块", "核心对象", "关键规则", "当前状态"]}
           rows={[
-            ["认证", "User", "管理员创建账号，中文账号名不可改", "已接入登录与角色权限"],
-            ["角色", "Character", "首次登录强制创建首角色", "已支持创建、切换、归档与恢复"],
-            ["背包", "InventoryItem", "公共与私人分流，私人整条挂单", "已支持真实读写"],
-            ["公共商店", "Shop / ShopItem", "按当前售价结算，后台改条目需一次性密码", "已支持购买、回收和后台维护"],
+            ["认证", "User", "账号由管理员创建，当前采用账号密码登录", "已接入登录与角色权限控制"],
+            ["角色", "Character", "首次登录需创建首个角色", "已支持创建、切换、归档与恢复"],
+            ["背包", "InventoryItem", "公共与私人分流，私人物品支持整单挂售", "已支持真实读写"],
+            ["公共商店", "Shop / ShopItem", "按现行售价结算，后台维护需一次性密码", "已支持购买、回收与后台维护"],
             ["玩家交易", "MarketListing", "自动扣款、自动转移，不支持议价", "已支持上架、下架与自动成交"],
           ]}
         />

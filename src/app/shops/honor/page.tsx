@@ -12,9 +12,9 @@ type HonorShopPageProps = {
 };
 
 const honorShopMessages = {
-  invalidPurchase: "购买失败，请检查角色、商品和数量后重试。",
-  unavailable: "该荣誉商品当前不可购买，请刷新后重试。",
-  insufficientHonor: "当前账号荣誉值不足，无法完成这次购买。",
+  invalidPurchase: "购买失败，请检查角色、商品与数量后重试。",
+  unavailable: "该荣誉商品当前不可购买，请刷新页面后重试。",
+  insufficientHonor: "当前账号荣誉值不足，无法完成此次购买。",
   completed: "购买成功，荣誉商店物品已写入当前角色背包。",
 } as const;
 
@@ -49,13 +49,13 @@ export default async function HonorShopPage({ searchParams }: HonorShopPageProps
   return (
     <AppShell
       title="荣誉商店"
-      description="荣誉商店现在已经接入真实商品与购买动作。结算货币固定为账号荣誉值，但购买结果仍然会进入当前角色背包。"
-      badge="Honor Shop"
+      description="荣誉商店以账号荣誉值结算，购买结果仍归属于当前角色背包。"
+      badge="商店"
     >
       <ShopPage
         title="荣誉值结算的特殊商店"
         badge="Honor Catalog"
-        description="荣誉值绑定账号，因此扣减发生在账号维度；物品归属仍然明确落到当前角色。"
+        description="荣誉值绑定账号，因此扣减发生在账号维度；购买所得物品仍明确归属当前角色。"
         currencyLabel="荣誉值"
         balanceLabel="当前账号荣誉值"
         balanceValue={user.honor}

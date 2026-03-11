@@ -180,7 +180,7 @@ export async function purchaseShopItemAction(formData: FormData) {
             totalCost: latestTotalCost,
             currency: latestShopItem.shop.currency,
           }),
-          note: `购买公共物品：${latestShopItem.name}`,
+          note: `商店购入公共物品：${latestShopItem.name}`,
         },
       });
     });
@@ -336,7 +336,7 @@ export async function sellbackInventoryItemAction(formData: FormData) {
             refundTotal,
             currency: sourceShopItem.shop.currency,
           }),
-          note: `半价回收公共物品：${inventoryItem.name}`,
+          note: `商店半价回收公共物品：${inventoryItem.name}`,
         },
       });
     });

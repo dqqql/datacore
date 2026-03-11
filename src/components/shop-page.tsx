@@ -72,7 +72,7 @@ export function ShopPage({
                 当前角色
               </p>
               <p className="mt-1 text-sm font-semibold text-[var(--color-ink-900)]">
-                {currentCharacter?.name ?? "暂无可购买角色"}
+                {currentCharacter?.name ?? "暂无可用角色"}
               </p>
             </div>
             <div className="rounded-2xl border border-[var(--border-soft)] bg-[rgba(255,250,241,0.82)] px-4 py-3">
@@ -85,10 +85,10 @@ export function ShopPage({
             </div>
             <div className="rounded-2xl border border-[var(--border-soft)] bg-[rgba(255,250,241,0.82)] px-4 py-3 sm:col-span-2">
               <p className="text-xs font-semibold uppercase tracking-[0.18em] text-[var(--color-ink-700)]">
-                已锁定规则
+                交易规则
               </p>
               <p className="mt-1 text-sm leading-6 text-[var(--color-ink-900)]">
-                使用当前角色购买，公共物品写入背包，只能按当前售价半价卖回系统商店。
+                购买将以当前角色为归属对象，公共物品进入背包后仅可按现行售价的半价卖回系统商店。
               </p>
             </div>
           </div>
@@ -112,11 +112,11 @@ export function ShopPage({
           <div>
             <h3 className="section-title text-2xl font-semibold">{shopName}</h3>
             <p className="mt-2 text-sm leading-6 text-[var(--muted)]">
-              价格按当前商店条目结算，货币类型固定为 {currencyLabel}。
+              所有价格均按当前商店条目结算，结算货币固定为{currencyLabel}。
             </p>
           </div>
           <span className="rounded-full border border-[var(--border-soft)] bg-[rgba(255,250,241,0.82)] px-3 py-1 text-xs font-semibold uppercase tracking-[0.2em] text-[var(--accent-strong)]">
-            {items.length} 个商品
+            {items.length} 个条目
           </span>
         </div>
 
@@ -128,7 +128,7 @@ export function ShopPage({
                 <th>物品</th>
                 <th>售价</th>
                 <th>数量</th>
-                <th>动作</th>
+                <th>操作</th>
               </tr>
             </thead>
             <tbody>
@@ -174,15 +174,13 @@ export function ShopPage({
                         </button>
                       </form>
                     </td>
-                    <td className="text-sm leading-6 text-[var(--muted)]">
-                      购买后进入当前角色背包
-                    </td>
+                    <td className="text-sm leading-6 text-[var(--muted)]">购入后将直接写入当前角色背包</td>
                   </tr>
                 ))
               ) : (
                 <tr>
                   <td colSpan={5} className="text-sm leading-6 text-[var(--muted)]">
-                    当前商店还没有商品。基础条目会在首次访问时自动初始化。
+                    当前商店尚无可售条目。基础条目会在首次访问时自动初始化。
                   </td>
                 </tr>
               )}
@@ -192,7 +190,7 @@ export function ShopPage({
 
         {purchaseDisabled ? (
           <p className="mt-4 text-sm leading-6 text-[var(--muted)]">
-            当前没有可用角色，所以暂时只能浏览商店内容。创建或切换角色后即可购买。
+            当前没有可用角色，因此暂时只能浏览商店内容。创建或切换角色后即可执行购买。
           </p>
         ) : null}
       </article>

@@ -106,7 +106,7 @@ export async function createMarketListingAction(formData: FormData) {
             inventoryItemId: inventoryItem.id,
             price: inventoryItem.unitPrice,
           }),
-          note: `上架私人物品：${inventoryItem.name}`,
+          note: `市场上架私人物品：${inventoryItem.name}`,
         },
       });
     });
@@ -211,7 +211,7 @@ export async function cancelMarketListingAction(formData: FormData) {
             inventoryItemId: listing.inventoryItemId,
             price: listing.price,
           }),
-          note: `下架私人物品：${listing.inventoryItem.name}`,
+          note: `市场下架私人物品：${listing.inventoryItem.name}`,
         },
       });
     });
@@ -365,7 +365,7 @@ export async function purchaseMarketListingAction(formData: FormData) {
               price: listing.price,
               inventoryItemId: listing.inventoryItemId,
             }),
-            note: `市场购入私人物品：${listing.inventoryItem.name}`,
+            note: `市场购入条目：${listing.inventoryItem.name}`,
           },
           {
             actorUserId: session.user.id,
@@ -379,7 +379,7 @@ export async function purchaseMarketListingAction(formData: FormData) {
               price: listing.price,
               inventoryItemId: listing.inventoryItemId,
             }),
-            note: `市场售出私人物品：${listing.inventoryItem.name}`,
+            note: `市场售出条目：${listing.inventoryItem.name}`,
           },
         ],
       });

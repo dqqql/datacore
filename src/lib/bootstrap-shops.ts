@@ -27,7 +27,7 @@ const defaultShops: DefaultShop[] = [
     name: "公会商店",
     type: "GUILD",
     currency: "GOLD",
-    description: "使用金币结算的常规公共商店。",
+    description: "以金币结算的常设公共商店。",
     sortOrder: 1,
     items: [
       {
@@ -58,7 +58,7 @@ const defaultShops: DefaultShop[] = [
     name: "荣誉商店",
     type: "HONOR",
     currency: "HONOR",
-    description: "使用账号荣誉值结算的特殊商店。",
+    description: "以账号荣誉值结算的特殊商店。",
     sortOrder: 2,
     items: [
       {

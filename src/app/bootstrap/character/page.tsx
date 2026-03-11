@@ -1,7 +1,7 @@
+import { redirect } from "next/navigation";
 import { AppShell } from "@/components/app-shell";
 import { createFirstCharacterAction } from "@/app/characters/actions";
 import { getUserContext } from "@/lib/auth-helpers";
-import { redirect } from "next/navigation";
 
 export default async function BootstrapCharacterPage() {
   const context = await getUserContext();
@@ -13,24 +13,24 @@ export default async function BootstrapCharacterPage() {
   return (
     <AppShell
       title="创建你的首个角色"
-      description="当前账号还没有可用角色。由于金币、声望、背包和交易都绑定角色，首个核心动作就是先创建角色。"
-      badge="Bootstrap"
+      description="当前账号尚未拥有可用角色。由于金币、声望、背包与交易都绑定角色，首个关键动作即为创建角色。"
+      badge="角色初始化"
     >
       <section className="grid gap-6 xl:grid-cols-[0.9fr_1.1fr]">
         <article className="panel rounded-[28px] p-6">
           <h3 className="section-title text-3xl font-semibold text-[var(--color-ink-900)]">
-            角色先行，系统其余功能随后开启
+            先立角色，再启用其余功能
           </h3>
           <p className="mt-3 text-sm leading-7 text-[var(--muted)]">
-            这是你第一次进入系统，所以先建立一个角色作为当前角色。建好之后，金币、
-            声望、背包、公共商店和市场交易的主链路都会自动围绕它展开。
+            这是你首次进入系统，请先建立一个角色作为当前角色。
+            创建完成后，金币、声望、背包、公共商店与玩家交易等主流程将围绕该角色展开。
           </p>
 
           <div className="mt-5 space-y-3">
             {[
               "首个角色创建后会自动成为当前选中角色。",
-              "普通玩家没有角色时不能编辑交易类内容。",
-              "角色后续可以新增，也可以归档，但不会被硬删除。",
+              "没有角色时，普通玩家无法进入交易与商店相关流程。",
+              "角色后续可以新增或归档，但当前不支持硬删除。",
             ].map((item) => (
               <div
                 key={item}

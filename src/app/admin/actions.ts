@@ -204,7 +204,7 @@ export async function refreshPasswordPoolAction(formData: FormData) {
         afterValue: JSON.stringify({
           count: parsed.data.count,
         }),
-        note: `刷新一次性密码池，生成 ${parsed.data.count} 条密码`,
+        note: `刷新一次性密码池，共生成 ${parsed.data.count} 组密码`,
       },
     });
   });
@@ -266,7 +266,7 @@ export async function createShopItemAction(formData: FormData) {
           entityId: createdItem.id,
           beforeValue: null,
           afterValue: JSON.stringify(snapshotShopItem(createdItem)),
-          note: `创建商店条目：${createdItem.name}（${shop.name}）`,
+          note: `新建商店条目：${createdItem.name}（${shop.name}）`,
         },
       });
     });
@@ -344,7 +344,7 @@ export async function updateShopItemAction(formData: FormData) {
           entityId: updatedItem.id,
           beforeValue: JSON.stringify(beforeSnapshot),
           afterValue: JSON.stringify(snapshotShopItem(updatedItem)),
-          note: `更新商店条目：${updatedItem.name}（${existingItem.shop.name}）`,
+          note: `维护商店条目：${updatedItem.name}（${existingItem.shop.name}）`,
         },
       });
     });

@@ -151,7 +151,7 @@ export async function updateCharacterEconomyAction(formData: FormData) {
       entityId: character.id,
       beforeValue: String(character.gold),
       afterValue: String(parsed.data.gold),
-      note: "玩家自行更新金币",
+      note: "玩家调整角色金币",
     });
   }
 
@@ -165,7 +165,7 @@ export async function updateCharacterEconomyAction(formData: FormData) {
       entityId: character.id,
       beforeValue: String(character.reputation),
       afterValue: String(parsed.data.reputation),
-      note: "玩家自行更新声望",
+      note: "玩家调整角色声望",
     });
   }
 
@@ -246,7 +246,7 @@ export async function createPrivateItemAction(formData: FormData) {
           quantity: createdItem.quantity,
           unitPrice: createdItem.unitPrice,
         }),
-        note: `玩家录入私人物品：${createdItem.name}`,
+        note: `玩家登记私人物品：${createdItem.name}`,
       },
     });
   });
@@ -326,7 +326,7 @@ export async function archiveCharacterAction(formData: FormData) {
         entityId: character.id,
         beforeValue: "ACTIVE",
         afterValue: "ARCHIVED",
-        note: `归档角色：${character.name}`,
+        note: `玩家归档角色：${character.name}`,
       },
     });
   });

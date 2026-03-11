@@ -12,9 +12,9 @@ type GuildShopPageProps = {
 };
 
 const guildShopMessages = {
-  invalidPurchase: "购买失败，请检查角色、商品和数量后重试。",
-  unavailable: "该商品当前不可购买，请刷新后重试。",
-  insufficientGold: "当前角色金币不足，无法完成这次购买。",
+  invalidPurchase: "购买失败，请检查角色、商品与数量后重试。",
+  unavailable: "该商品当前不可购买，请刷新页面后重试。",
+  insufficientGold: "当前角色金币不足，无法完成此次购买。",
   completed: "购买成功，公共物品已写入当前角色背包。",
 } as const;
 
@@ -49,13 +49,13 @@ export default async function GuildShopPage({ searchParams }: GuildShopPageProps
   return (
     <AppShell
       title="公会商店"
-      description="公会商店现在已经接入真实商品与购买动作。结算货币固定为金币，购买结果会直接进入当前角色背包。"
-      badge="Guild Shop"
+      description="公会商店提供以金币结算的公共物品。购买结果将直接进入当前角色背包。"
+      badge="商店"
     >
       <ShopPage
         title="金币结算的公共商店"
         badge="Guild Catalog"
-        description="这里出售的是公共物品。它们只能从系统商店买入，也只能在角色页按当前售价半价卖回。"
+        description="此处售卖的均为公共物品，只能由系统商店售出，并仅可在角色页按当前售价半价回收。"
         currencyLabel="金币"
         balanceLabel="当前角色金币"
         balanceValue={currentCharacter?.gold ?? 0}

@@ -21,7 +21,7 @@ export function LoginForm() {
           autoComplete="username"
           required
           className="focus-ring w-full rounded-2xl border border-[var(--border-strong)] bg-[rgba(255,250,241,0.95)] px-4 py-3 text-sm text-[var(--color-ink-900)]"
-          placeholder="请输入管理员或玩家账号"
+          placeholder="请输入账号"
         />
       </div>
 
@@ -51,7 +51,7 @@ export function LoginForm() {
         disabled={isPending}
         className="focus-ring inline-flex w-full items-center justify-center rounded-full bg-[var(--accent)] px-4 py-3 text-sm font-semibold text-white shadow-[0_12px_24px_rgba(95,66,31,0.22)] transition hover:bg-[var(--accent-strong)] disabled:cursor-not-allowed disabled:opacity-70"
       >
-        {isPending ? "正在校验身份..." : "进入管理中心"}
+        {isPending ? "正在验证身份..." : "进入系统"}
       </button>
     </form>
   );

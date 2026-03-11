@@ -10,24 +10,24 @@ export default async function DashboardPage() {
   return (
     <AppShell
       title={`欢迎回来，${user.displayName}`}
-      description="这里是当前账号的主控制台。主流程已经接到真实数据，当前用于汇总角色、荣誉值和各业务入口。"
-      badge={session.user.role === "ADMIN" ? "Admin Session" : "Player Session"}
+      description="这里是当前账号的总控台，集中展示角色、荣誉值与主要业务入口。"
+      badge={session.user.role === "ADMIN" ? "管理员会话" : "玩家会话"}
     >
       <section className="grid gap-6 lg:grid-cols-3">
         <SummaryCard
           title="账号荣誉值"
           value={String(user.honor)}
-          detail="荣誉值绑定账号，只允许管理员发放或调整。"
+          detail="荣誉值绑定账号，仅允许管理员发放或扣减。"
         />
         <SummaryCard
           title="当前角色"
           value={currentCharacter?.name ?? "未选择角色"}
-          detail="全局当前角色会影响背包、商店购买和玩家交易。"
+          detail="当前角色将影响背包、商店购买与玩家交易。"
         />
         <SummaryCard
           title="可用角色数"
           value={String(characters.length)}
-          detail="首版中角色支持新增与归档，不支持硬删除。"
+          detail="角色支持新增与归档，当前不支持硬删除。"
         />
       </section>
 
@@ -37,7 +37,7 @@ export default async function DashboardPage() {
             <div>
               <h3 className="section-title text-2xl font-semibold">当前角色摘要</h3>
               <p className="mt-2 text-sm leading-6 text-[var(--muted)]">
-                这里展示的是当前选中角色的实时金币和声望，用于快速确认后续购买与交易基线。
+                这里展示当前角色的实时金币与声望，便于确认后续购买与交易基线。
               </p>
             </div>
             {currentCharacter ? (
@@ -45,7 +45,7 @@ export default async function DashboardPage() {
                 href={`/characters/${currentCharacter.id}`}
                 className="focus-ring inline-flex rounded-full border border-[var(--border-strong)] px-4 py-2 text-sm font-semibold text-[var(--accent-strong)] hover:bg-[rgba(127,92,47,0.08)]"
               >
-                进入角色页
+                查看角色详情
               </Link>
             ) : null}
           </div>
@@ -75,9 +75,9 @@ export default async function DashboardPage() {
           <div className="mt-4 grid gap-3">
             {[
               { label: "角色管理", href: "/characters", detail: "切换当前角色，新增或归档角色" },
-              { label: "玩家交易", href: "/market", detail: "查看挂单、下架自己的物品或直接购买" },
+              { label: "玩家交易", href: "/market", detail: "浏览挂单、下架自己的物品或直接购买" },
               { label: "公会商店", href: "/shops/guild", detail: "使用当前角色金币购买公共物品" },
-              { label: "荣誉商店", href: "/shops/honor", detail: "使用账号荣誉值购买并归属到当前角色" },
+              { label: "荣誉商店", href: "/shops/honor", detail: "使用账号荣誉值购买并归属给当前角色" },
             ].map((item) => (
               <Link
                 key={item.href}

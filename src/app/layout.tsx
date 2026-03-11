@@ -15,8 +15,8 @@ const bodyFont = Noto_Sans_SC({
 });
 
 export const metadata: Metadata = {
-  title: "DND 数据管理中心",
-  description: "用于西征模式世界的角色、经济、背包与交易管理中心",
+  title: "西征模式数据管理中心",
+  description: "用于西征模式世界的角色、经济、背包与交易管理中枢",
 };
 
 export default function RootLayout({

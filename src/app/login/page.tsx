@@ -12,9 +12,9 @@ export default async function LoginPage() {
 
   return (
     <AppShell
-      title="登录与身份校验"
-      description="首版接入的是账号密码登录。账号由管理员创建，管理员密码通过独立挂载文件维护。"
-      badge="Auth"
+      title="登录与身份验证"
+      description="当前版本采用账号密码登录。账号由管理员创建，管理员密码通过独立挂载文件维护。"
+      badge="登录"
     >
       <section className="grid gap-6 xl:grid-cols-[0.9fr_1.1fr]">
         <article className="panel rounded-[28px] p-6">
@@ -22,15 +22,16 @@ export default async function LoginPage() {
             从这里进入你的西征账簿
           </h3>
           <p className="mt-3 text-sm leading-7 text-[var(--muted)]">
-            当前风格遵循你锁定的方向：带有轻微中世纪魔法气质，但绝不牺牲表格可读性。
-            登录成功后，普通玩家如果还没有角色，会被直接引导去创建首角色。
+            当前界面维持“奇幻世界观下的正式系统”这一方向，
+            以稳定、克制与清晰为优先。登录成功后，若普通玩家尚未创建角色，
+            系统将直接引导其完成首个角色的建立。
           </p>
 
           <div className="mt-5 space-y-3">
             {[
-              "支持中文账号，账号名与系统显示名一致。",
-              "管理员密码来自挂载文件，改密后下次登录即生效。",
-              "普通玩家首个核心动作是创建角色，而不是先配置别的资料。",
+              "支持中文账号，账号名与系统显示名保持一致。",
+              "管理员密码来自挂载文件，修改后下次登录即生效。",
+              "普通玩家登录后的首个关键动作是创建角色。",
             ].map((item) => (
               <div
                 key={item}

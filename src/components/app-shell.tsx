@@ -18,10 +18,10 @@ export function AppShell({ title, description, badge, children }: AppShellProps)
               Guild Ledger
             </p>
             <h1 className="section-title mt-3 text-3xl font-semibold text-[var(--color-ink-900)]">
-              DND 数据管理中心
+              西征数据管理中心
             </h1>
             <p className="mt-3 text-sm leading-6 text-[var(--muted)]">
-              角色、背包、公共商店与玩家交易共用同一套数据台，当前以可读性和操作稳定性优先。
+              角色、背包、公共商店与玩家交易共用同一套数据账簿，当前以可读性、可追溯性与操作稳定性为优先。
             </p>
           </div>
 
@@ -68,10 +68,10 @@ export function AppShell({ title, description, badge, children }: AppShellProps)
               <div className="grid gap-3 sm:grid-cols-2">
                 <div className="rounded-2xl border border-[var(--border-soft)] bg-[rgba(255,250,241,0.82)] px-4 py-3">
                   <p className="text-xs font-semibold uppercase tracking-[0.18em] text-[var(--color-ink-700)]">
-                    使用方式
+                    使用原则
                   </p>
                   <p className="mt-1 text-sm font-semibold text-[var(--color-ink-900)]">
-                    以页面实际数据为准
+                    以页面实时数据为准
                   </p>
                 </div>
                 <div className="rounded-2xl border border-[var(--border-soft)] bg-[rgba(255,250,241,0.82)] px-4 py-3">
@@ -79,7 +79,7 @@ export function AppShell({ title, description, badge, children }: AppShellProps)
                     当前阶段
                   </p>
                   <p className="mt-1 text-sm font-semibold text-[var(--color-ink-900)]">
-                    上线前收尾
+                    正式上线准备
                   </p>
                 </div>
               </div>
