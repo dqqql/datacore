@@ -41,13 +41,21 @@ export async function getUserContext() {
   }
 
   let currentCharacter = user.currentCharacter;
+  const isCurrentCharacterActive = currentCharacter?.status === "ACTIVE";
 
-  if (!currentCharacter && user.characters.length > 0) {
+  if (!isCurrentCharacterActive && user.characters.length > 0) {
     currentCharacter = user.characters[0];
 
     await prisma.user.update({
       where: { id: user.id },
       data: { currentCharacterId: currentCharacter.id },
+    });
+  } else if (!isCurrentCharacterActive && user.characters.length === 0 && user.currentCharacterId) {
+    currentCharacter = null;
+
+    await prisma.user.update({
+      where: { id: user.id },
+      data: { currentCharacterId: null },
     });
   }
 

@@ -24,6 +24,12 @@ function getShopPathFromSlug(shopSlug: string) {
   return "/shops/rulebook";
 }
 
+class ShopActionError extends Error {
+  constructor(public readonly code: string) {
+    super(code);
+  }
+}
+
 export async function purchaseShopItemAction(formData: FormData) {
   const session = await requireSession();
   await ensureDefaultShops();
@@ -77,80 +83,128 @@ export async function purchaseShopItemAction(formData: FormData) {
     redirect(buildRedirect(shopPath, "shopError", "insufficient-honor"));
   }
 
-  await prisma.$transaction(async (tx) => {
-    const existingInventoryItem = await tx.inventoryItem.findFirst({
-      where: {
-        characterId: character.id,
-        ownershipType: "PUBLIC",
-        sourceShopItemId: shopItem.id,
-        isListed: false,
-      },
-    });
+  try {
+    await prisma.$transaction(async (tx) => {
+      const latestShopItem = await tx.shopItem.findUnique({
+        where: { id: shopItem.id },
+        include: { shop: true },
+      });
 
-    if (shopItem.shop.currency === "GOLD") {
-      await tx.character.update({
-        where: { id: character.id },
-        data: {
-          gold: {
-            decrement: totalCost,
-          },
-        },
-      });
-    } else {
-      await tx.user.update({
-        where: { id: user.id },
-        data: {
-          honor: {
-            decrement: totalCost,
-          },
-        },
-      });
-    }
+      if (!latestShopItem || !latestShopItem.isActive) {
+        throw new ShopActionError("purchase-unavailable");
+      }
 
-    if (existingInventoryItem) {
-      await tx.inventoryItem.update({
-        where: { id: existingInventoryItem.id },
-        data: {
-          quantity: {
-            increment: parsed.data.quantity,
-          },
-          unitPrice: shopItem.price,
-          description: shopItem.description,
-        },
-      });
-    } else {
-      await tx.inventoryItem.create({
-        data: {
+      const latestTotalCost = latestShopItem.price * parsed.data.quantity;
+      const existingInventoryItem = await tx.inventoryItem.findFirst({
+        where: {
           characterId: character.id,
-          name: shopItem.name,
-          description: shopItem.description,
-          quantity: parsed.data.quantity,
-          unitPrice: shopItem.price,
           ownershipType: "PUBLIC",
-          sourceShopItemId: shopItem.id,
+          sourceShopItemId: latestShopItem.id,
+          isListed: false,
         },
       });
+
+      if (latestShopItem.shop.currency === "GOLD") {
+        const updatedCharacter = await tx.character.updateMany({
+          where: {
+            id: character.id,
+            userId: session.user.id,
+            status: "ACTIVE",
+            gold: {
+              gte: latestTotalCost,
+            },
+          },
+          data: {
+            gold: {
+              decrement: latestTotalCost,
+            },
+          },
+        });
+
+        if (updatedCharacter.count !== 1) {
+          throw new ShopActionError("insufficient-gold");
+        }
+      } else {
+        const updatedUser = await tx.user.updateMany({
+          where: {
+            id: user.id,
+            honor: {
+              gte: latestTotalCost,
+            },
+          },
+          data: {
+            honor: {
+              decrement: latestTotalCost,
+            },
+          },
+        });
+
+        if (updatedUser.count !== 1) {
+          throw new ShopActionError("insufficient-honor");
+        }
+      }
+
+      if (existingInventoryItem) {
+        await tx.inventoryItem.update({
+          where: { id: existingInventoryItem.id },
+          data: {
+            quantity: {
+              increment: parsed.data.quantity,
+            },
+            unitPrice: latestShopItem.price,
+            description: latestShopItem.description,
+          },
+        });
+      } else {
+        await tx.inventoryItem.create({
+          data: {
+            characterId: character.id,
+            name: latestShopItem.name,
+            description: latestShopItem.description,
+            quantity: parsed.data.quantity,
+            unitPrice: latestShopItem.price,
+            ownershipType: "PUBLIC",
+            sourceShopItemId: latestShopItem.id,
+          },
+        });
+      }
+
+      await tx.auditLog.create({
+        data: {
+          actorUserId: session.user.id,
+          targetUserId: session.user.id,
+          targetCharacterId: character.id,
+          action: "SHOP_PURCHASED",
+          entityType: "ShopItem",
+          entityId: latestShopItem.id,
+          beforeValue: null,
+          afterValue: JSON.stringify({
+            shop: latestShopItem.shop.slug,
+            quantity: parsed.data.quantity,
+            totalCost: latestTotalCost,
+            currency: latestShopItem.shop.currency,
+          }),
+          note: `购买公共物品：${latestShopItem.name}`,
+        },
+      });
+    });
+  } catch (error) {
+    if (error instanceof ShopActionError) {
+      if (error.code === "purchase-unavailable") {
+        redirect(buildRedirect(shopPath, "shopError", "purchase-unavailable"));
+      }
+
+      if (error.code === "insufficient-gold") {
+        redirect(buildRedirect(shopPath, "shopError", "insufficient-gold"));
+      }
+
+      if (error.code === "insufficient-honor") {
+        redirect(buildRedirect(shopPath, "shopError", "insufficient-honor"));
+      }
     }
 
-    await tx.auditLog.create({
-      data: {
-        actorUserId: session.user.id,
-        targetUserId: session.user.id,
-        targetCharacterId: character.id,
-        action: "SHOP_PURCHASED",
-        entityType: "ShopItem",
-        entityId: shopItem.id,
-        beforeValue: null,
-        afterValue: JSON.stringify({
-          shop: shopItem.shop.slug,
-          quantity: parsed.data.quantity,
-          totalCost,
-          currency: shopItem.shop.currency,
-        }),
-        note: `购买公共物品：${shopItem.name}`,
-      },
-    });
-  });
+    throw error;
+  }
 
   revalidatePath("/dashboard");
   revalidatePath(`/characters/${character.id}`);
@@ -210,63 +264,93 @@ export async function sellbackInventoryItemAction(formData: FormData) {
   const refundPerUnit = Math.floor(sourceShopItem.price / 2);
   const refundTotal = refundPerUnit * parsed.data.quantity;
 
-  await prisma.$transaction(async (tx) => {
-    if (parsed.data.quantity === inventoryItem.quantity) {
-      await tx.inventoryItem.delete({
-        where: { id: inventoryItem.id },
-      });
-    } else {
-      await tx.inventoryItem.update({
-        where: { id: inventoryItem.id },
-        data: {
-          quantity: {
-            decrement: parsed.data.quantity,
+  try {
+    await prisma.$transaction(async (tx) => {
+      if (parsed.data.quantity === inventoryItem.quantity) {
+        const deletedItem = await tx.inventoryItem.deleteMany({
+          where: {
+            id: inventoryItem.id,
+            characterId: inventoryItem.characterId,
+            ownershipType: "PUBLIC",
+            isListed: false,
+            quantity: parsed.data.quantity,
           },
-        },
-      });
-    }
+        });
 
-    if (sourceShopItem.shop.currency === "GOLD") {
-      await tx.character.update({
-        where: { id: inventoryItem.characterId },
-        data: {
-          gold: {
-            increment: refundTotal,
+        if (deletedItem.count !== 1) {
+          throw new ShopActionError("sellback-unavailable");
+        }
+      } else {
+        const updatedItem = await tx.inventoryItem.updateMany({
+          where: {
+            id: inventoryItem.id,
+            characterId: inventoryItem.characterId,
+            ownershipType: "PUBLIC",
+            isListed: false,
+            quantity: {
+              gte: parsed.data.quantity,
+            },
           },
-        },
-      });
-    } else {
-      await tx.user.update({
-        where: { id: session.user.id },
-        data: {
-          honor: {
-            increment: refundTotal,
+          data: {
+            quantity: {
+              decrement: parsed.data.quantity,
+            },
           },
-        },
-      });
-    }
+        });
 
-    await tx.auditLog.create({
-      data: {
-        actorUserId: session.user.id,
-        targetUserId: session.user.id,
-        targetCharacterId: inventoryItem.characterId,
-        action: "SHOP_SELLBACK",
-        entityType: "InventoryItem",
-        entityId: inventoryItem.id,
-        beforeValue: JSON.stringify({
-          quantity: inventoryItem.quantity,
-          unitPrice: sourceShopItem.price,
-        }),
-        afterValue: JSON.stringify({
-          refundedQuantity: parsed.data.quantity,
-          refundTotal,
-          currency: sourceShopItem.shop.currency,
-        }),
-        note: `半价回收公共物品：${inventoryItem.name}`,
-      },
+        if (updatedItem.count !== 1) {
+          throw new ShopActionError("sellback-unavailable");
+        }
+      }
+
+      if (sourceShopItem.shop.currency === "GOLD") {
+        await tx.character.update({
+          where: { id: inventoryItem.characterId },
+          data: {
+            gold: {
+              increment: refundTotal,
+            },
+          },
+        });
+      } else {
+        await tx.user.update({
+          where: { id: session.user.id },
+          data: {
+            honor: {
+              increment: refundTotal,
+            },
+          },
+        });
+      }
+
+      await tx.auditLog.create({
+        data: {
+          actorUserId: session.user.id,
+          targetUserId: session.user.id,
+          targetCharacterId: inventoryItem.characterId,
+          action: "SHOP_SELLBACK",
+          entityType: "InventoryItem",
+          entityId: inventoryItem.id,
+          beforeValue: JSON.stringify({
+            quantity: inventoryItem.quantity,
+            unitPrice: sourceShopItem.price,
+          }),
+          afterValue: JSON.stringify({
+            refundedQuantity: parsed.data.quantity,
+            refundTotal,
+            currency: sourceShopItem.shop.currency,
+          }),
+          note: `半价回收公共物品：${inventoryItem.name}`,
+        },
+      });
     });
-  });
+  } catch (error) {
+    if (error instanceof ShopActionError && error.code === "sellback-unavailable") {
+      redirect(buildRedirect(`/characters/${parsed.data.characterId}`, "sellbackError", "sellback-unavailable"));
+    }
+
+    throw error;
+  }
 
   revalidatePath("/dashboard");
   revalidatePath(`/characters/${inventoryItem.characterId}`);

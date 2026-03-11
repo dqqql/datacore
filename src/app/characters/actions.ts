@@ -19,6 +19,11 @@ function buildCharacterDetailRedirect(characterId: string, key: string, value: s
   return `/characters/${characterId}?${searchParams.toString()}`;
 }
 
+function buildCharactersRedirect(key: string, value: string) {
+  const searchParams = new URLSearchParams({ [key]: value });
+  return `/characters?${searchParams.toString()}`;
+}
+
 export async function createCharacterAction(formData: FormData) {
   const session = await requireSession();
   const parsed = createCharacterSchema.safeParse({
@@ -249,6 +254,167 @@ export async function createPrivateItemAction(formData: FormData) {
   revalidatePath("/dashboard");
   revalidatePath(`/characters/${character.id}`);
   redirect(buildCharacterDetailRedirect(character.id, "inventorySuccess", "private-item-created"));
+}
+
+export async function archiveCharacterAction(formData: FormData) {
+  const session = await requireSession();
+  const redirectPath = String(formData.get("redirectPath") ?? "").trim();
+  const parsed = selectCharacterSchema.safeParse({
+    characterId: formData.get("characterId"),
+  });
+
+  if (!parsed.success) {
+    redirect(buildCharactersRedirect("characterError", "invalid-character-selection"));
+  }
+
+  const character = await prisma.character.findFirst({
+    where: {
+      id: parsed.data.characterId,
+      userId: session.user.id,
+      status: "ACTIVE",
+    },
+    include: {
+      sellingListings: {
+        where: { status: "ACTIVE" },
+        select: { id: true },
+      },
+    },
+  });
+
+  if (!character) {
+    redirect(buildCharactersRedirect("characterError", "character-not-found"));
+  }
+
+  if (character.sellingListings.length > 0) {
+    redirect(buildCharactersRedirect("characterError", "character-has-active-listings"));
+  }
+
+  await prisma.$transaction(async (tx) => {
+    await tx.character.update({
+      where: { id: character.id },
+      data: {
+        status: "ARCHIVED",
+      },
+    });
+
+    const nextActiveCharacter = await tx.character.findFirst({
+      where: {
+        userId: session.user.id,
+        status: "ACTIVE",
+        id: {
+          not: character.id,
+        },
+      },
+      orderBy: { createdAt: "asc" },
+      select: { id: true },
+    });
+
+    await tx.user.update({
+      where: { id: session.user.id },
+      data: {
+        currentCharacterId: nextActiveCharacter?.id ?? null,
+      },
+    });
+
+    await tx.auditLog.create({
+      data: {
+        actorUserId: session.user.id,
+        targetUserId: session.user.id,
+        targetCharacterId: character.id,
+        action: "CHARACTER_ARCHIVED",
+        entityType: "Character",
+        entityId: character.id,
+        beforeValue: "ACTIVE",
+        afterValue: "ARCHIVED",
+        note: `归档角色：${character.name}`,
+      },
+    });
+  });
+
+  revalidatePath("/dashboard");
+  revalidatePath("/characters");
+  revalidatePath(`/characters/${character.id}`);
+  revalidatePath("/admin/users");
+  revalidatePath("/admin/audit");
+
+  if (redirectPath === `/characters/${character.id}`) {
+    redirect(buildCharactersRedirect("characterSuccess", "character-archived"));
+  }
+
+  redirect(buildCharactersRedirect("characterSuccess", "character-archived"));
+}
+
+export async function restoreCharacterAction(formData: FormData) {
+  const session = await requireAdminSession();
+  const parsed = selectCharacterSchema.safeParse({
+    characterId: formData.get("characterId"),
+  });
+
+  if (!parsed.success) {
+    redirect("/admin/users?characterError=invalid-character-selection");
+  }
+
+  const character = await prisma.character.findFirst({
+    where: {
+      id: parsed.data.characterId,
+      status: "ARCHIVED",
+    },
+    include: {
+      sellingListings: {
+        where: { status: "ACTIVE" },
+        select: { id: true },
+      },
+      user: {
+        select: {
+          id: true,
+          currentCharacterId: true,
+        },
+      },
+    },
+  });
+
+  if (!character) {
+    redirect("/admin/users?characterError=character-not-found");
+  }
+
+  await prisma.$transaction(async (tx) => {
+    await tx.character.update({
+      where: { id: character.id },
+      data: {
+        status: "ACTIVE",
+      },
+    });
+
+    if (!character.user.currentCharacterId) {
+      await tx.user.update({
+        where: { id: character.user.id },
+        data: {
+          currentCharacterId: character.id,
+        },
+      });
+    }
+
+    await tx.auditLog.create({
+      data: {
+        actorUserId: session.user.id,
+        targetUserId: character.user.id,
+        targetCharacterId: character.id,
+        action: "CHARACTER_RESTORED",
+        entityType: "Character",
+        entityId: character.id,
+        beforeValue: "ARCHIVED",
+        afterValue: "ACTIVE",
+        note: `管理员恢复角色：${character.name}`,
+      },
+    });
+  });
+
+  revalidatePath("/dashboard");
+  revalidatePath("/characters");
+  revalidatePath(`/characters/${character.id}`);
+  revalidatePath("/admin/users");
+  revalidatePath("/admin/audit");
+  redirect("/admin/users?characterSuccess=character-restored");
 }
 
 export async function createUserAction(formData: FormData) {

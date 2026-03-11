@@ -15,6 +15,12 @@ function buildRedirect(pathname: string, key: string, value: string) {
   return `${pathname}?${searchParams.toString()}`;
 }
 
+class MarketActionError extends Error {
+  constructor(public readonly code: string) {
+    super(code);
+  }
+}
+
 export async function createMarketListingAction(formData: FormData) {
   const session = await requireSession();
   const fallbackCharacterId = String(formData.get("characterId") ?? "").trim();
@@ -50,50 +56,67 @@ export async function createMarketListingAction(formData: FormData) {
     redirect(buildRedirect(`/characters/${parsed.data.characterId}`, "listingError", "listing-unavailable"));
   }
 
-  await prisma.$transaction(async (tx) => {
-    await tx.inventoryItem.update({
-      where: { id: inventoryItem.id },
-      data: {
-        isListed: true,
-      },
-    });
+  try {
+    await prisma.$transaction(async (tx) => {
+      const listedItem = await tx.inventoryItem.updateMany({
+        where: {
+          id: inventoryItem.id,
+          characterId: parsed.data.characterId,
+          ownershipType: "PRIVATE",
+          isListed: false,
+        },
+        data: {
+          isListed: true,
+        },
+      });
 
-    await tx.marketListing.upsert({
-      where: {
-        inventoryItemId: inventoryItem.id,
-      },
-      update: {
-        sellerCharacterId: parsed.data.characterId,
-        buyerCharacterId: null,
-        price: inventoryItem.unitPrice,
-        status: "ACTIVE",
-        listedAt: new Date(),
-        soldAt: null,
-      },
-      create: {
-        inventoryItemId: inventoryItem.id,
-        sellerCharacterId: parsed.data.characterId,
-        price: inventoryItem.unitPrice,
-        status: "ACTIVE",
-      },
-    });
+      if (listedItem.count !== 1) {
+        throw new MarketActionError("listing-unavailable");
+      }
 
-    await tx.auditLog.create({
-      data: {
-        actorUserId: session.user.id,
-        targetUserId: session.user.id,
-        targetCharacterId: parsed.data.characterId,
-        action: "MARKET_LISTED",
-        entityType: "MarketListing",
-        entityId: inventoryItem.marketListing?.id ?? inventoryItem.id,
-        afterValue: JSON.stringify({
+      await tx.marketListing.upsert({
+        where: {
           inventoryItemId: inventoryItem.id,
+        },
+        update: {
+          sellerCharacterId: parsed.data.characterId,
+          buyerCharacterId: null,
           price: inventoryItem.unitPrice,
-        }),
-        note: `上架私人物品：${inventoryItem.name}`,
-      },
+          status: "ACTIVE",
+          listedAt: new Date(),
+          soldAt: null,
+        },
+        create: {
+          inventoryItemId: inventoryItem.id,
+          sellerCharacterId: parsed.data.characterId,
+          price: inventoryItem.unitPrice,
+          status: "ACTIVE",
+        },
+      });
+
+      await tx.auditLog.create({
+        data: {
+          actorUserId: session.user.id,
+          targetUserId: session.user.id,
+          targetCharacterId: parsed.data.characterId,
+          action: "MARKET_LISTED",
+          entityType: "MarketListing",
+          entityId: inventoryItem.marketListing?.id ?? inventoryItem.id,
+          afterValue: JSON.stringify({
+            inventoryItemId: inventoryItem.id,
+            price: inventoryItem.unitPrice,
+          }),
+          note: `上架私人物品：${inventoryItem.name}`,
+        },
+      });
     });
-  });
+  } catch (error) {
+    if (error instanceof MarketActionError && error.code === "listing-unavailable") {
+      redirect(buildRedirect(`/characters/${parsed.data.characterId}`, "listingError", "listing-unavailable"));
+    }
+
+    throw error;
+  }
 
   revalidatePath(`/characters/${parsed.data.characterId}`);
   revalidatePath("/market");
@@ -141,39 +164,68 @@ export async function cancelMarketListingAction(formData: FormData) {
     redirect(buildRedirect("/market", "marketError", "cancel-unavailable"));
   }
 
-  await prisma.$transaction(async (tx) => {
-    await tx.marketListing.update({
-      where: { id: listing.id },
-      data: {
-        status: "CANCELLED",
-        buyerCharacterId: null,
-        soldAt: null,
-      },
-    });
+  try {
+    await prisma.$transaction(async (tx) => {
+      const cancelledListing = await tx.marketListing.updateMany({
+        where: {
+          id: listing.id,
+          sellerCharacterId: listing.sellerCharacterId,
+          status: "ACTIVE",
+        },
+        data: {
+          status: "CANCELLED",
+          buyerCharacterId: null,
+          soldAt: null,
+        },
+      });
 
-    await tx.inventoryItem.update({
-      where: { id: listing.inventoryItemId },
-      data: {
-        isListed: false,
-      },
-    });
+      if (cancelledListing.count !== 1) {
+        throw new MarketActionError("cancel-unavailable");
+      }
 
-    await tx.auditLog.create({
-      data: {
-        actorUserId: session.user.id,
-        targetUserId: session.user.id,
-        targetCharacterId: listing.sellerCharacterId,
-        action: "MARKET_CANCELLED",
-        entityType: "MarketListing",
-        entityId: listing.id,
-        beforeValue: JSON.stringify({
-          inventoryItemId: listing.inventoryItemId,
-          price: listing.price,
-        }),
-        note: `下架私人物品：${listing.inventoryItem.name}`,
-      },
+      const restoredItem = await tx.inventoryItem.updateMany({
+        where: {
+          id: listing.inventoryItemId,
+          characterId: listing.sellerCharacterId,
+          isListed: true,
+          ownershipType: "PRIVATE",
+        },
+        data: {
+          isListed: false,
+        },
+      });
+
+      if (restoredItem.count !== 1) {
+        throw new MarketActionError("cancel-unavailable");
+      }
+
+      await tx.auditLog.create({
+        data: {
+          actorUserId: session.user.id,
+          targetUserId: session.user.id,
+          targetCharacterId: listing.sellerCharacterId,
+          action: "MARKET_CANCELLED",
+          entityType: "MarketListing",
+          entityId: listing.id,
+          beforeValue: JSON.stringify({
+            inventoryItemId: listing.inventoryItemId,
+            price: listing.price,
+          }),
+          note: `下架私人物品：${listing.inventoryItem.name}`,
+        },
+      });
     });
-  });
+  } catch (error) {
+    if (error instanceof MarketActionError && error.code === "cancel-unavailable") {
+      if (redirectPath === "/market") {
+        redirect(buildRedirect("/market", "marketError", "cancel-unavailable"));
+      }
+
+      redirect(buildRedirect(`/characters/${fallbackCharacterId}`, "listingError", "cancel-unavailable"));
+    }
+
+    throw error;
+  }
 
   revalidatePath(`/characters/${listing.sellerCharacterId}`);
   revalidatePath("/market");
@@ -233,76 +285,118 @@ export async function purchaseMarketListingAction(formData: FormData) {
     redirect(buildRedirect("/market", "marketError", "insufficient-gold"));
   }
 
-  await prisma.$transaction(async (tx) => {
-    await tx.character.update({
-      where: { id: buyerCharacter.id },
-      data: {
-        gold: {
-          decrement: listing.price,
+  try {
+    await prisma.$transaction(async (tx) => {
+      const deductedBuyer = await tx.character.updateMany({
+        where: {
+          id: buyerCharacter.id,
+          userId: session.user.id,
+          status: "ACTIVE",
+          gold: {
+            gte: listing.price,
+          },
         },
-      },
-    });
-
-    await tx.character.update({
-      where: { id: listing.sellerCharacterId },
-      data: {
-        gold: {
-          increment: listing.price,
+        data: {
+          gold: {
+            decrement: listing.price,
+          },
         },
-      },
-    });
+      });
 
-    await tx.inventoryItem.update({
-      where: { id: listing.inventoryItemId },
-      data: {
-        characterId: buyerCharacter.id,
-        isListed: false,
-        unitPrice: listing.price,
-      },
-    });
+      if (deductedBuyer.count !== 1) {
+        throw new MarketActionError("insufficient-gold");
+      }
 
-    await tx.marketListing.update({
-      where: { id: listing.id },
-      data: {
-        status: "SOLD",
-        buyerCharacterId: buyerCharacter.id,
-        soldAt: new Date(),
-      },
-    });
-
-    await tx.auditLog.createMany({
-      data: [
-        {
-          actorUserId: session.user.id,
-          targetUserId: session.user.id,
-          targetCharacterId: buyerCharacter.id,
-          action: "MARKET_PURCHASED",
-          entityType: "MarketListing",
-          entityId: listing.id,
-          afterValue: JSON.stringify({
-            role: "buyer",
-            price: listing.price,
-            inventoryItemId: listing.inventoryItemId,
-          }),
-          note: `市场购入私人物品：${listing.inventoryItem.name}`,
+      const soldListing = await tx.marketListing.updateMany({
+        where: {
+          id: listing.id,
+          sellerCharacterId: listing.sellerCharacterId,
+          status: "ACTIVE",
         },
-        {
-          actorUserId: session.user.id,
-          targetUserId: listing.sellerCharacter.userId,
-          targetCharacterId: listing.sellerCharacterId,
-          action: "MARKET_PURCHASED",
-          entityType: "MarketListing",
-          entityId: listing.id,
-          afterValue: JSON.stringify({
-            role: "seller",
-            price: listing.price,
-            inventoryItemId: listing.inventoryItemId,
-          }),
-          note: `市场售出私人物品：${listing.inventoryItem.name}`,
+        data: {
+          status: "SOLD",
+          buyerCharacterId: buyerCharacter.id,
+          soldAt: new Date(),
         },
-      ],
+      });
+
+      if (soldListing.count !== 1) {
+        throw new MarketActionError("purchase-unavailable");
+      }
+
+      const transferredItem = await tx.inventoryItem.updateMany({
+        where: {
+          id: listing.inventoryItemId,
+          characterId: listing.sellerCharacterId,
+          isListed: true,
+          ownershipType: "PRIVATE",
+        },
+        data: {
+          characterId: buyerCharacter.id,
+          isListed: false,
+          unitPrice: listing.price,
+        },
+      });
+
+      if (transferredItem.count !== 1) {
+        throw new MarketActionError("purchase-unavailable");
+      }
+
+      await tx.character.update({
+        where: { id: listing.sellerCharacterId },
+        data: {
+          gold: {
+            increment: listing.price,
+          },
+        },
+      });
+
+      await tx.auditLog.createMany({
+        data: [
+          {
+            actorUserId: session.user.id,
+            targetUserId: session.user.id,
+            targetCharacterId: buyerCharacter.id,
+            action: "MARKET_PURCHASED",
+            entityType: "MarketListing",
+            entityId: listing.id,
+            afterValue: JSON.stringify({
+              role: "buyer",
+              price: listing.price,
+              inventoryItemId: listing.inventoryItemId,
+            }),
+            note: `市场购入私人物品：${listing.inventoryItem.name}`,
+          },
+          {
+            actorUserId: session.user.id,
+            targetUserId: listing.sellerCharacter.userId,
+            targetCharacterId: listing.sellerCharacterId,
+            action: "MARKET_PURCHASED",
+            entityType: "MarketListing",
+            entityId: listing.id,
+            afterValue: JSON.stringify({
+              role: "seller",
+              price: listing.price,
+              inventoryItemId: listing.inventoryItemId,
+            }),
+            note: `市场售出私人物品：${listing.inventoryItem.name}`,
+          },
+        ],
+      });
     });
-  });
+  } catch (error) {
+    if (error instanceof MarketActionError) {
+      if (error.code === "insufficient-gold") {
+        redirect(buildRedirect("/market", "marketError", "insufficient-gold"));
+      }
+
+      if (error.code === "purchase-unavailable") {
+        redirect(buildRedirect("/market", "marketError", "purchase-unavailable"));
+      }
+    }
+
+    throw error;
+  }
 
   revalidatePath("/market");
   revalidatePath(`/characters/${buyerCharacter.id}`);

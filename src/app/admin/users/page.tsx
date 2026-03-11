@@ -1,6 +1,6 @@
 import { AppShell } from "@/components/app-shell";
 import { adjustUserHonorAction } from "@/app/admin/actions";
-import { createUserAction } from "@/app/characters/actions";
+import { createUserAction, restoreCharacterAction } from "@/app/characters/actions";
 import { prisma } from "@/lib/prisma";
 import { requireAdminSession } from "@/lib/auth-helpers";
 
@@ -8,6 +8,8 @@ type AdminUsersPageProps = {
   searchParams: Promise<{
     honorError?: string;
     honorSuccess?: string;
+    characterError?: string;
+    characterSuccess?: string;
   }>;
 };
 
@@ -18,6 +20,12 @@ const honorMessages = {
   success: "荣誉值调整完成，审计日志已同步记录。",
 } as const;
 
+const characterMessages = {
+  invalid: "角色恢复失败，请刷新页面后重试。",
+  notFound: "目标角色不存在，或已经不是归档状态。",
+  restored: "角色已恢复，后续会重新出现在玩家角色列表中。",
+} as const;
+
 export default async function AdminUsersPage({ searchParams }: AdminUsersPageProps) {
   await requireAdminSession();
   const query = await searchParams;
@@ -26,8 +34,8 @@ export default async function AdminUsersPage({ searchParams }: AdminUsersPagePro
     orderBy: [{ role: "asc" }, { createdAt: "asc" }],
     include: {
       characters: {
-        where: { status: "ACTIVE" },
-        select: { id: true },
+        orderBy: [{ status: "asc" }, { createdAt: "asc" }],
+        select: { id: true, name: true, status: true },
       },
     },
   });
@@ -43,6 +51,14 @@ export default async function AdminUsersPage({ searchParams }: AdminUsersPagePro
 
   const honorSuccessMessage =
     query.honorSuccess === "honor-adjusted" ? honorMessages.success : null;
+  const characterErrorMessage =
+    query.characterError === "invalid-character-selection"
+      ? characterMessages.invalid
+      : query.characterError === "character-not-found"
+        ? characterMessages.notFound
+        : null;
+  const characterSuccessMessage =
+    query.characterSuccess === "character-restored" ? characterMessages.restored : null;
 
   return (
     <AppShell
@@ -55,9 +71,21 @@ export default async function AdminUsersPage({ searchParams }: AdminUsersPagePro
           <div className="mb-4">
             <h3 className="section-title text-2xl font-semibold">账号列表</h3>
             <p className="mt-2 text-sm leading-6 text-[var(--muted)]">
-              当前列表已经读取真实数据库数据，后续会在这里补荣誉值发放和账号停用。
+              当前列表已经读取真实数据库数据，也会展示归档角色，方便管理员执行恢复。
             </p>
           </div>
+
+          {characterErrorMessage ? (
+            <div className="mb-4 rounded-2xl border border-[rgba(165,63,43,0.24)] bg-[rgba(165,63,43,0.08)] px-4 py-3 text-sm leading-6 text-[var(--danger)]">
+              {characterErrorMessage}
+            </div>
+          ) : null}
+
+          {characterSuccessMessage ? (
+            <div className="mb-4 rounded-2xl border border-[rgba(53,95,59,0.24)] bg-[rgba(53,95,59,0.08)] px-4 py-3 text-sm leading-6 text-[var(--success)]">
+              {characterSuccessMessage}
+            </div>
+          ) : null}
 
           <div className="table-shell">
             <table>
@@ -67,17 +95,45 @@ export default async function AdminUsersPage({ searchParams }: AdminUsersPagePro
                   <th>角色权限</th>
                   <th>荣誉值</th>
                   <th>活跃角色数</th>
+                  <th>归档角色</th>
                 </tr>
               </thead>
               <tbody>
-                {users.map((user) => (
-                  <tr key={user.id}>
-                    <td>{user.displayName}</td>
-                    <td>{user.role}</td>
-                    <td className="numeric">{user.honor}</td>
-                    <td className="numeric">{user.characters.length}</td>
-                  </tr>
-                ))}
+                {users.map((user) => {
+                  const activeCharacters = user.characters.filter((character) => character.status === "ACTIVE");
+                  const archivedCharacters = user.characters.filter((character) => character.status === "ARCHIVED");
+
+                  return (
+                    <tr key={user.id}>
+                      <td>{user.displayName}</td>
+                      <td>{user.role}</td>
+                      <td className="numeric">{user.honor}</td>
+                      <td className="numeric">{activeCharacters.length}</td>
+                      <td>
+                        {archivedCharacters.length > 0 ? (
+                          <div className="flex flex-wrap gap-2">
+                            {archivedCharacters.map((character) => (
+                              <form key={character.id} action={restoreCharacterAction} className="flex flex-wrap gap-2">
+                                <input type="hidden" name="characterId" value={character.id} />
+                                <span className="rounded-full border border-[var(--border-soft)] bg-[rgba(255,250,241,0.95)] px-3 py-1 text-xs font-semibold text-[var(--color-ink-900)]">
+                                  {character.name}
+                                </span>
+                                <button
+                                  type="submit"
+                                  className="focus-ring rounded-full border border-[var(--border-strong)] px-3 py-1 text-xs font-semibold text-[var(--accent-strong)] hover:bg-[rgba(127,92,47,0.08)]"
+                                >
+                                  恢复
+                                </button>
+                              </form>
+                            ))}
+                          </div>
+                        ) : (
+                          <span className="text-sm text-[var(--muted)]">无</span>
+                        )}
+                      </td>
+                    </tr>
+                  );
+                })}
               </tbody>
             </table>
           </div>

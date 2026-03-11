@@ -1,10 +1,39 @@
 import Link from "next/link";
 import { AppShell } from "@/components/app-shell";
-import { createCharacterAction, selectCurrentCharacterAction } from "@/app/characters/actions";
+import {
+  archiveCharacterAction,
+  createCharacterAction,
+  selectCurrentCharacterAction,
+} from "@/app/characters/actions";
 import { requirePlayerCharacter } from "@/lib/auth-helpers";
 
-export default async function CharactersPage() {
+type CharactersPageProps = {
+  searchParams: Promise<{
+    characterError?: string;
+    characterSuccess?: string;
+  }>;
+};
+
+const characterMessages = {
+  invalid: "角色操作失败，请刷新页面后重试。",
+  notFound: "目标角色不存在，或已不在当前账号下。",
+  activeListings: "该角色还有在售挂单，请先下架后再归档。",
+  archived: "角色已归档。若需要恢复，请让管理员在后台执行恢复。",
+} as const;
+
+export default async function CharactersPage({ searchParams }: CharactersPageProps) {
   const { characters, currentCharacter } = await requirePlayerCharacter();
+  const query = await searchParams;
+  const characterErrorMessage =
+    query.characterError === "invalid-character-selection"
+      ? characterMessages.invalid
+      : query.characterError === "character-not-found"
+        ? characterMessages.notFound
+        : query.characterError === "character-has-active-listings"
+          ? characterMessages.activeListings
+          : null;
+  const characterSuccessMessage =
+    query.characterSuccess === "character-archived" ? characterMessages.archived : null;
 
   return (
     <AppShell
@@ -18,13 +47,25 @@ export default async function CharactersPage() {
             <div>
               <h3 className="section-title text-2xl font-semibold">当前账号角色</h3>
               <p className="mt-2 text-sm leading-6 text-[var(--muted)]">
-                当前选中角色会在仪表盘、背包和交易相关页面中复用。
+                当前列表只展示活跃角色。归档后角色不会被硬删除，管理员可在后台恢复。
               </p>
             </div>
             <span className="rounded-full border border-[var(--border-soft)] bg-[rgba(127,92,47,0.08)] px-3 py-1 text-xs font-semibold uppercase tracking-[0.22em] text-[var(--accent-strong)]">
               {characters.length} 个角色
             </span>
           </div>
+
+          {characterErrorMessage ? (
+            <div className="mb-4 rounded-2xl border border-[rgba(165,63,43,0.24)] bg-[rgba(165,63,43,0.08)] px-4 py-3 text-sm leading-6 text-[var(--danger)]">
+              {characterErrorMessage}
+            </div>
+          ) : null}
+
+          {characterSuccessMessage ? (
+            <div className="mb-4 rounded-2xl border border-[rgba(53,95,59,0.24)] bg-[rgba(53,95,59,0.08)] px-4 py-3 text-sm leading-6 text-[var(--success)]">
+              {characterSuccessMessage}
+            </div>
+          ) : null}
 
           <div className="table-shell">
             <table>
@@ -70,6 +111,15 @@ export default async function CharactersPage() {
                         >
                           查看详情
                         </Link>
+                        <form action={archiveCharacterAction}>
+                          <input type="hidden" name="characterId" value={character.id} />
+                          <button
+                            type="submit"
+                            className="focus-ring rounded-full border border-[rgba(165,63,43,0.24)] px-3 py-1 text-xs font-semibold text-[var(--danger)] hover:bg-[rgba(165,63,43,0.08)]"
+                          >
+                            归档
+                          </button>
+                        </form>
                       </div>
                     </td>
                   </tr>
