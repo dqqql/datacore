@@ -95,13 +95,13 @@ export function ShopPage({
         </div>
 
         {errorMessage ? (
-          <div className="mt-5 rounded-2xl border border-[rgba(165,63,43,0.24)] bg-[rgba(165,63,43,0.08)] px-4 py-3 text-sm leading-6 text-[var(--danger)]">
+          <div className="status-message mt-5" data-tone="danger">
             {errorMessage}
           </div>
         ) : null}
 
         {successMessage ? (
-          <div className="mt-5 rounded-2xl border border-[rgba(53,95,59,0.24)] bg-[rgba(53,95,59,0.08)] px-4 py-3 text-sm leading-6 text-[var(--success)]">
+          <div className="status-message mt-5" data-tone="success">
             {successMessage}
           </div>
         ) : null}
@@ -163,12 +163,12 @@ export function ShopPage({
                           defaultValue={1}
                           disabled={purchaseDisabled}
                           aria-label={`${item.name} 购买数量`}
-                          className="focus-ring w-20 rounded-xl border border-[var(--border-strong)] bg-[rgba(255,250,241,0.95)] px-3 py-2 text-sm text-[var(--color-ink-900)] disabled:cursor-not-allowed disabled:opacity-50"
+                          className="focus-ring field-input field-compact w-20 disabled:cursor-not-allowed disabled:opacity-50"
                         />
                         <button
                           type="submit"
                           disabled={purchaseDisabled}
-                          className="focus-ring inline-flex items-center justify-center rounded-full bg-[var(--accent)] px-4 py-2 text-sm font-semibold text-white shadow-[0_8px_18px_rgba(95,66,31,0.18)] hover:bg-[var(--accent-strong)] disabled:cursor-not-allowed disabled:bg-[var(--muted)]"
+                          className="focus-ring btn-primary btn-compact disabled:bg-[var(--muted)]"
                         >
                           购买
                         </button>

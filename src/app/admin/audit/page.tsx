@@ -104,7 +104,7 @@ export default async function AdminAuditPage() {
                   ))
                 ) : (
                   <tr>
-                    <td colSpan={7} className="text-sm leading-6 text-[var(--muted)]">
+                    <td colSpan={7} className="px-6 py-10 text-sm leading-6 text-[var(--muted)]">
                       当前尚无审计记录。玩家操作与后台维护动作都会自动写入这里。
                     </td>
                   </tr>

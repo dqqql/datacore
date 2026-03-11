@@ -151,36 +151,32 @@ export default async function CharacterDetailPage({ params, searchParams }: Char
             <input type="hidden" name="characterId" value={character.id} />
 
             <div className="space-y-2">
-              <label className="block text-sm font-semibold text-[var(--color-ink-700)]" htmlFor="gold">
-                金币
-              </label>
+              <label className="field-label" htmlFor="gold">金币</label>
               <input
                 id="gold"
                 name="gold"
                 type="number"
                 min={0}
                 defaultValue={character.gold}
-                className="focus-ring w-full rounded-2xl border border-[var(--border-strong)] bg-[rgba(255,250,241,0.95)] px-4 py-3 text-sm text-[var(--color-ink-900)]"
+                className="focus-ring field-input"
               />
             </div>
 
             <div className="space-y-2">
-              <label className="block text-sm font-semibold text-[var(--color-ink-700)]" htmlFor="reputation">
-                声望
-              </label>
+              <label className="field-label" htmlFor="reputation">声望</label>
               <input
                 id="reputation"
                 name="reputation"
                 type="number"
                 min={0}
                 defaultValue={character.reputation}
-                className="focus-ring w-full rounded-2xl border border-[var(--border-strong)] bg-[rgba(255,250,241,0.95)] px-4 py-3 text-sm text-[var(--color-ink-900)]"
+                className="focus-ring field-input"
               />
             </div>
 
             <button
               type="submit"
-              className="focus-ring inline-flex w-full items-center justify-center rounded-full bg-[var(--accent)] px-4 py-3 text-sm font-semibold text-white shadow-[0_12px_24px_rgba(95,66,31,0.22)] hover:bg-[var(--accent-strong)]"
+              className="focus-ring btn-primary w-full"
             >
               保存经济数据
             </button>
@@ -208,25 +204,25 @@ export default async function CharacterDetailPage({ params, searchParams }: Char
             </div>
 
             {inventoryErrorMessage ? (
-              <div className="mt-5 rounded-2xl border border-[rgba(165,63,43,0.24)] bg-[rgba(165,63,43,0.08)] px-4 py-3 text-sm leading-6 text-[var(--danger)]">
+              <div className="status-message mt-5" data-tone="danger">
                 {inventoryErrorMessage}
               </div>
             ) : null}
 
             {inventorySuccessMessage ? (
-              <div className="mt-5 rounded-2xl border border-[rgba(53,95,59,0.24)] bg-[rgba(53,95,59,0.08)] px-4 py-3 text-sm leading-6 text-[var(--success)]">
+              <div className="status-message mt-5" data-tone="success">
                 {inventorySuccessMessage}
               </div>
             ) : null}
 
             {listingErrorMessage ? (
-              <div className="mt-5 rounded-2xl border border-[rgba(165,63,43,0.24)] bg-[rgba(165,63,43,0.08)] px-4 py-3 text-sm leading-6 text-[var(--danger)]">
+              <div className="status-message mt-5" data-tone="danger">
                 {listingErrorMessage}
               </div>
             ) : null}
 
             {listingSuccessMessage ? (
-              <div className="mt-5 rounded-2xl border border-[rgba(53,95,59,0.24)] bg-[rgba(53,95,59,0.08)] px-4 py-3 text-sm leading-6 text-[var(--success)]">
+              <div className="status-message mt-5" data-tone="success">
                 {listingSuccessMessage}
               </div>
             ) : null}
@@ -270,7 +266,7 @@ export default async function CharacterDetailPage({ params, searchParams }: Char
                                 <input type="hidden" name="listingId" value={item.marketListing.id} />
                                 <button
                                   type="submit"
-                                  className="focus-ring inline-flex items-center justify-center rounded-full border border-[var(--border-strong)] px-3 py-2 text-xs font-semibold text-[var(--accent-strong)] hover:bg-[rgba(127,92,47,0.08)]"
+                                  className="focus-ring btn-secondary btn-compact"
                                 >
                                   下架挂单
                                 </button>
@@ -284,7 +280,7 @@ export default async function CharacterDetailPage({ params, searchParams }: Char
                                 <input type="hidden" name="inventoryItemId" value={item.id} />
                                 <button
                                   type="submit"
-                                  className="focus-ring inline-flex items-center justify-center rounded-full border border-[var(--border-strong)] px-3 py-2 text-xs font-semibold text-[var(--accent-strong)] hover:bg-[rgba(127,92,47,0.08)]"
+                                  className="focus-ring btn-secondary btn-compact"
                                 >
                                   上架市场
                                 </button>
@@ -321,24 +317,20 @@ export default async function CharacterDetailPage({ params, searchParams }: Char
 
               <div className="grid gap-4 md:grid-cols-2">
                 <div className="space-y-2 md:col-span-2">
-                  <label className="block text-sm font-semibold text-[var(--color-ink-700)]" htmlFor="private-item-name">
-                    物品名称
-                  </label>
+                  <label className="field-label" htmlFor="private-item-name">物品名称</label>
                   <input
                     id="private-item-name"
                     name="name"
                     type="text"
                     required
                     maxLength={60}
-                    className="focus-ring w-full rounded-2xl border border-[var(--border-strong)] bg-[rgba(255,250,241,0.95)] px-4 py-3 text-sm text-[var(--color-ink-900)]"
+                    className="focus-ring field-input"
                     placeholder="例如：裹纹护符"
                   />
                 </div>
 
                 <div className="space-y-2">
-                  <label className="block text-sm font-semibold text-[var(--color-ink-700)]" htmlFor="private-item-quantity">
-                    数量
-                  </label>
+                  <label className="field-label" htmlFor="private-item-quantity">数量</label>
                   <input
                     id="private-item-quantity"
                     name="quantity"
@@ -347,14 +339,12 @@ export default async function CharacterDetailPage({ params, searchParams }: Char
                     min={1}
                     max={9999}
                     defaultValue={1}
-                    className="focus-ring w-full rounded-2xl border border-[var(--border-strong)] bg-[rgba(255,250,241,0.95)] px-4 py-3 text-sm text-[var(--color-ink-900)]"
+                    className="focus-ring field-input"
                   />
                 </div>
 
                 <div className="space-y-2">
-                  <label className="block text-sm font-semibold text-[var(--color-ink-700)]" htmlFor="private-item-price">
-                    单价
-                  </label>
+                  <label className="field-label" htmlFor="private-item-price">单价</label>
                   <input
                     id="private-item-price"
                     name="unitPrice"
@@ -363,23 +353,18 @@ export default async function CharacterDetailPage({ params, searchParams }: Char
                     min={0}
                     max={999999}
                     defaultValue={0}
-                    className="focus-ring w-full rounded-2xl border border-[var(--border-strong)] bg-[rgba(255,250,241,0.95)] px-4 py-3 text-sm text-[var(--color-ink-900)]"
+                    className="focus-ring field-input"
                   />
                 </div>
 
                 <div className="space-y-2 md:col-span-2">
-                  <label
-                    className="block text-sm font-semibold text-[var(--color-ink-700)]"
-                    htmlFor="private-item-description"
-                  >
-                    物品描述
-                  </label>
+                  <label className="field-label" htmlFor="private-item-description">物品描述</label>
                   <textarea
                     id="private-item-description"
                     name="description"
                     rows={4}
                     maxLength={240}
-                    className="focus-ring w-full rounded-2xl border border-[var(--border-strong)] bg-[rgba(255,250,241,0.95)] px-4 py-3 text-sm leading-6 text-[var(--color-ink-900)]"
+                    className="focus-ring field-textarea"
                     placeholder="可选。补充来源、用途或辨识信息，便于后续背包与交易查看。"
                   />
                 </div>
@@ -391,7 +376,7 @@ export default async function CharacterDetailPage({ params, searchParams }: Char
                 </p>
                 <button
                   type="submit"
-                  className="focus-ring inline-flex items-center justify-center rounded-full bg-[var(--accent)] px-5 py-3 text-sm font-semibold text-white shadow-[0_12px_24px_rgba(95,66,31,0.22)] hover:bg-[var(--accent-strong)]"
+                  className="focus-ring btn-primary"
                 >
                   写入背包
                 </button>
@@ -406,13 +391,13 @@ export default async function CharacterDetailPage({ params, searchParams }: Char
             </p>
 
             {sellbackErrorMessage ? (
-              <div className="mt-5 rounded-2xl border border-[rgba(165,63,43,0.24)] bg-[rgba(165,63,43,0.08)] px-4 py-3 text-sm leading-6 text-[var(--danger)]">
+              <div className="status-message mt-5" data-tone="danger">
                 {sellbackErrorMessage}
               </div>
             ) : null}
 
             {sellbackSuccessMessage ? (
-              <div className="mt-5 rounded-2xl border border-[rgba(53,95,59,0.24)] bg-[rgba(53,95,59,0.08)] px-4 py-3 text-sm leading-6 text-[var(--success)]">
+              <div className="status-message mt-5" data-tone="success">
                 {sellbackSuccessMessage}
               </div>
             ) : null}
@@ -461,11 +446,11 @@ export default async function CharacterDetailPage({ params, searchParams }: Char
                                 max={item.quantity}
                                 defaultValue={1}
                                 aria-label={`${item.name} 回收数量`}
-                                className="focus-ring w-20 rounded-xl border border-[var(--border-strong)] bg-[rgba(255,250,241,0.95)] px-3 py-2 text-sm text-[var(--color-ink-900)]"
+                                className="focus-ring field-input field-compact w-20"
                               />
                               <button
                                 type="submit"
-                                className="focus-ring inline-flex items-center justify-center rounded-full border border-[var(--border-strong)] px-4 py-2 text-sm font-semibold text-[var(--accent-strong)] hover:bg-[rgba(127,92,47,0.08)]"
+                                className="focus-ring btn-secondary btn-compact"
                               >
                                 半价回收
                               </button>

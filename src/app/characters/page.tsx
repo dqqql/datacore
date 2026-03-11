@@ -58,13 +58,13 @@ export default async function CharactersPage({ searchParams }: CharactersPagePro
           </div>
 
           {characterErrorMessage ? (
-            <div className="mb-4 rounded-2xl border border-[rgba(165,63,43,0.24)] bg-[rgba(165,63,43,0.08)] px-4 py-3 text-sm leading-6 text-[var(--danger)]">
+            <div className="status-message mb-4" data-tone="danger">
               {characterErrorMessage}
             </div>
           ) : null}
 
           {characterSuccessMessage ? (
-            <div className="mb-4 rounded-2xl border border-[rgba(53,95,59,0.24)] bg-[rgba(53,95,59,0.08)] px-4 py-3 text-sm leading-6 text-[var(--success)]">
+            <div className="status-message mb-4" data-tone="success">
               {characterSuccessMessage}
             </div>
           ) : null}
@@ -102,14 +102,14 @@ export default async function CharactersPage({ searchParams }: CharactersPagePro
                           <input type="hidden" name="characterId" value={character.id} />
                           <button
                             type="submit"
-                            className="focus-ring rounded-full border border-[var(--border-strong)] px-3 py-1 text-xs font-semibold text-[var(--accent-strong)] hover:bg-[rgba(127,92,47,0.08)]"
+                            className="focus-ring btn-secondary btn-compact"
                           >
                             设为当前
                           </button>
                         </form>
                         <Link
                           href={`/characters/${character.id}`}
-                          className="focus-ring rounded-full border border-[var(--border-soft)] px-3 py-1 text-xs font-semibold text-[var(--color-ink-700)] hover:bg-[rgba(255,250,241,0.95)]"
+                          className="focus-ring btn-secondary btn-compact text-[var(--color-ink-700)]"
                         >
                           查看详情
                         </Link>
@@ -117,7 +117,7 @@ export default async function CharactersPage({ searchParams }: CharactersPagePro
                           <input type="hidden" name="characterId" value={character.id} />
                           <button
                             type="submit"
-                            className="focus-ring rounded-full border border-[rgba(165,63,43,0.24)] px-3 py-1 text-xs font-semibold text-[var(--danger)] hover:bg-[rgba(165,63,43,0.08)]"
+                            className="focus-ring btn-danger btn-compact"
                           >
                             归档
                           </button>
@@ -148,14 +148,14 @@ export default async function CharactersPage({ searchParams }: CharactersPagePro
                 type="text"
                 required
                 maxLength={40}
-                className="focus-ring w-full rounded-2xl border border-[var(--border-strong)] bg-[rgba(255,250,241,0.95)] px-4 py-3 text-sm text-[var(--color-ink-900)]"
+                className="focus-ring field-input"
                 placeholder="例如：边境佣兵"
               />
             </div>
 
             <button
               type="submit"
-              className="focus-ring inline-flex w-full items-center justify-center rounded-full bg-[var(--accent)] px-4 py-3 text-sm font-semibold text-white shadow-[0_12px_24px_rgba(95,66,31,0.22)] hover:bg-[var(--accent-strong)]"
+              className="focus-ring btn-primary w-full"
             >
               创建角色
             </button>

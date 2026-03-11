@@ -46,22 +46,20 @@ export default async function AdminPasswordsPage({ searchParams }: AdminPassword
           </p>
 
           {otpErrorMessage ? (
-            <div className="mt-4 rounded-2xl border border-[rgba(165,63,43,0.24)] bg-[rgba(165,63,43,0.08)] px-4 py-3 text-sm leading-6 text-[var(--danger)]">
+            <div className="status-message mt-4" data-tone="danger">
               {otpErrorMessage}
             </div>
           ) : null}
 
           {otpSuccessMessage ? (
-            <div className="mt-4 rounded-2xl border border-[rgba(53,95,59,0.24)] bg-[rgba(53,95,59,0.08)] px-4 py-3 text-sm leading-6 text-[var(--success)]">
+            <div className="status-message mt-4" data-tone="success">
               {otpSuccessMessage}
             </div>
           ) : null}
 
           <form action={refreshPasswordPoolAction} className="mt-5 space-y-4">
             <div className="space-y-2">
-              <label className="block text-sm font-semibold text-[var(--color-ink-700)]" htmlFor="otp-count">
-                生成数量
-              </label>
+              <label className="field-label" htmlFor="otp-count">生成数量</label>
               <input
                 id="otp-count"
                 name="count"
@@ -70,13 +68,13 @@ export default async function AdminPasswordsPage({ searchParams }: AdminPassword
                 max={1000}
                 defaultValue={100}
                 required
-                className="focus-ring w-full rounded-2xl border border-[var(--border-strong)] bg-[rgba(255,250,241,0.95)] px-4 py-3 text-sm text-[var(--color-ink-900)]"
+                className="focus-ring field-input"
               />
             </div>
 
             <button
               type="submit"
-              className="focus-ring inline-flex w-full items-center justify-center rounded-full bg-[var(--accent)] px-4 py-3 text-sm font-semibold text-white shadow-[0_12px_24px_rgba(95,66,31,0.22)] hover:bg-[var(--accent-strong)]"
+              className="focus-ring btn-primary w-full"
             >
               刷新密码池
             </button>

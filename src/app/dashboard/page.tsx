@@ -43,7 +43,7 @@ export default async function DashboardPage() {
             {currentCharacter ? (
               <Link
                 href={`/characters/${currentCharacter.id}`}
-                className="focus-ring inline-flex rounded-full border border-[var(--border-strong)] px-4 py-2 text-sm font-semibold text-[var(--accent-strong)] hover:bg-[rgba(127,92,47,0.08)]"
+                className="focus-ring btn-secondary"
               >
                 查看角色详情
               </Link>
@@ -82,7 +82,7 @@ export default async function DashboardPage() {
               <Link
                 key={item.href}
                 href={item.href}
-                className="focus-ring rounded-2xl border border-[var(--border-soft)] bg-[rgba(255,250,241,0.82)] px-4 py-3 transition hover:border-[var(--border-strong)] hover:bg-[rgba(255,250,241,0.95)]"
+                className="focus-ring subtle-card rounded-2xl px-4 py-3 transition hover:border-[var(--border-strong)] hover:bg-[rgba(255,252,246,0.98)]"
               >
                 <p className="text-sm font-semibold text-[var(--color-ink-900)]">{item.label}</p>
                 <p className="mt-1 text-sm text-[var(--muted)]">{item.detail}</p>

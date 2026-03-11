@@ -91,13 +91,13 @@ export default async function AdminUsersPage({ searchParams }: AdminUsersPagePro
           </div>
 
           {characterErrorMessage ? (
-            <div className="mb-4 rounded-2xl border border-[rgba(165,63,43,0.24)] bg-[rgba(165,63,43,0.08)] px-4 py-3 text-sm leading-6 text-[var(--danger)]">
+            <div className="status-message mb-4" data-tone="danger">
               {characterErrorMessage}
             </div>
           ) : null}
 
           {characterSuccessMessage ? (
-            <div className="mb-4 rounded-2xl border border-[rgba(53,95,59,0.24)] bg-[rgba(53,95,59,0.08)] px-4 py-3 text-sm leading-6 text-[var(--success)]">
+            <div className="status-message mb-4" data-tone="success">
               {characterSuccessMessage}
             </div>
           ) : null}
@@ -135,7 +135,7 @@ export default async function AdminUsersPage({ searchParams }: AdminUsersPagePro
                                 </span>
                                 <button
                                   type="submit"
-                                  className="focus-ring rounded-full border border-[var(--border-strong)] px-3 py-1 text-xs font-semibold text-[var(--accent-strong)] hover:bg-[rgba(127,92,47,0.08)]"
+                                  className="focus-ring btn-secondary btn-compact"
                                 >
                                   恢复
                                 </button>
@@ -161,45 +161,41 @@ export default async function AdminUsersPage({ searchParams }: AdminUsersPagePro
           </p>
 
           {userErrorMessage ? (
-            <div className="mt-4 rounded-2xl border border-[rgba(165,63,43,0.24)] bg-[rgba(165,63,43,0.08)] px-4 py-3 text-sm leading-6 text-[var(--danger)]">
+            <div className="status-message mt-4" data-tone="danger">
               {userErrorMessage}
             </div>
           ) : null}
 
           <form action={createUserAction} className="mt-5 space-y-4">
             <div className="space-y-2">
-              <label className="block text-sm font-semibold text-[var(--color-ink-700)]" htmlFor="admin-create-username">
-                账号名
-              </label>
+              <label className="field-label" htmlFor="admin-create-username">账号名</label>
               <input
                 id="admin-create-username"
                 name="username"
                 type="text"
                 required
                 maxLength={40}
-                className="focus-ring w-full rounded-2xl border border-[var(--border-strong)] bg-[rgba(255,250,241,0.95)] px-4 py-3 text-sm text-[var(--color-ink-900)]"
+                className="focus-ring field-input"
                 placeholder="例如：银烛会计"
               />
             </div>
 
             <div className="space-y-2">
-              <label className="block text-sm font-semibold text-[var(--color-ink-700)]" htmlFor="admin-create-password">
-                初始密码
-              </label>
+              <label className="field-label" htmlFor="admin-create-password">初始密码</label>
               <input
                 id="admin-create-password"
                 name="password"
                 type="password"
                 required
                 minLength={6}
-                className="focus-ring w-full rounded-2xl border border-[var(--border-strong)] bg-[rgba(255,250,241,0.95)] px-4 py-3 text-sm text-[var(--color-ink-900)]"
+                className="focus-ring field-input"
                 placeholder="至少 6 位"
               />
             </div>
 
             <button
               type="submit"
-              className="focus-ring inline-flex w-full items-center justify-center rounded-full bg-[var(--accent)] px-4 py-3 text-sm font-semibold text-white shadow-[0_12px_24px_rgba(95,66,31,0.22)] hover:bg-[var(--accent-strong)]"
+              className="focus-ring btn-primary w-full"
             >
               创建普通账号
             </button>
@@ -212,27 +208,25 @@ export default async function AdminUsersPage({ searchParams }: AdminUsersPagePro
             </p>
 
             {honorErrorMessage ? (
-              <div className="mt-4 rounded-2xl border border-[rgba(165,63,43,0.24)] bg-[rgba(165,63,43,0.08)] px-4 py-3 text-sm leading-6 text-[var(--danger)]">
+              <div className="status-message mt-4" data-tone="danger">
                 {honorErrorMessage}
               </div>
             ) : null}
 
             {honorSuccessMessage ? (
-              <div className="mt-4 rounded-2xl border border-[rgba(53,95,59,0.24)] bg-[rgba(53,95,59,0.08)] px-4 py-3 text-sm leading-6 text-[var(--success)]">
+              <div className="status-message mt-4" data-tone="success">
                 {honorSuccessMessage}
               </div>
             ) : null}
 
             <form action={adjustUserHonorAction} className="mt-5 space-y-4">
               <div className="space-y-2">
-                <label className="block text-sm font-semibold text-[var(--color-ink-700)]" htmlFor="honor-user-id">
-                  目标账号
-                </label>
+                <label className="field-label" htmlFor="honor-user-id">目标账号</label>
                 <select
                   id="honor-user-id"
                   name="userId"
                   required
-                  className="focus-ring w-full rounded-2xl border border-[var(--border-strong)] bg-[rgba(255,250,241,0.95)] px-4 py-3 text-sm text-[var(--color-ink-900)]"
+                  className="focus-ring field-select"
                   defaultValue=""
                 >
                   <option value="" disabled>
@@ -247,37 +241,33 @@ export default async function AdminUsersPage({ searchParams }: AdminUsersPagePro
               </div>
 
               <div className="space-y-2">
-                <label className="block text-sm font-semibold text-[var(--color-ink-700)]" htmlFor="honor-delta">
-                  变动值
-                </label>
+                <label className="field-label" htmlFor="honor-delta">变动值</label>
                 <input
                   id="honor-delta"
                   name="delta"
                   type="number"
                   required
-                  className="focus-ring w-full rounded-2xl border border-[var(--border-strong)] bg-[rgba(255,250,241,0.95)] px-4 py-3 text-sm text-[var(--color-ink-900)]"
+                  className="focus-ring field-input"
                   placeholder="正数为发放，负数为扣减"
                 />
               </div>
 
               <div className="space-y-2">
-                <label className="block text-sm font-semibold text-[var(--color-ink-700)]" htmlFor="honor-reason">
-                  调整原因
-                </label>
+                <label className="field-label" htmlFor="honor-reason">调整原因</label>
                 <textarea
                   id="honor-reason"
                   name="reason"
                   rows={3}
                   required
                   maxLength={120}
-                  className="focus-ring w-full rounded-2xl border border-[var(--border-strong)] bg-[rgba(255,250,241,0.95)] px-4 py-3 text-sm leading-6 text-[var(--color-ink-900)]"
+                  className="focus-ring field-textarea"
                   placeholder="例如：完成公会任务奖励 / 手工纠错"
                 />
               </div>
 
               <button
                 type="submit"
-                className="focus-ring inline-flex w-full items-center justify-center rounded-full bg-[var(--accent)] px-4 py-3 text-sm font-semibold text-white shadow-[0_12px_24px_rgba(95,66,31,0.22)] hover:bg-[var(--accent-strong)]"
+                className="focus-ring btn-primary w-full"
               >
                 提交荣誉值调整
               </button>

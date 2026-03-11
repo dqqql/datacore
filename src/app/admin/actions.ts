@@ -18,8 +18,28 @@ function buildRedirect(pathname: string, key: string, value: string) {
   return `${pathname}?${searchParams.toString()}`;
 }
 
-function buildAdminShopsRedirect(key: string, value: string) {
-  return buildRedirect("/admin/shops", key, value);
+function buildAdminShopsRedirect(
+  params: Record<string, string | null | undefined>,
+) {
+  const searchParams = new URLSearchParams();
+
+  for (const [key, value] of Object.entries(params)) {
+    if (value) {
+      searchParams.set(key, value);
+    }
+  }
+
+  const queryString = searchParams.toString();
+  return queryString ? `/admin/shops?${queryString}` : "/admin/shops";
+}
+
+function readAdminShopReturnState(formData: FormData) {
+  return {
+    page: formData.get("returnPage")?.toString() ?? undefined,
+    mode: formData.get("returnMode")?.toString() ?? undefined,
+    itemId: formData.get("returnItemId")?.toString() ?? undefined,
+    shopId: formData.get("returnShopId")?.toString() ?? undefined,
+  };
 }
 
 function generatePasswordCodes(count: number) {
@@ -216,6 +236,7 @@ export async function refreshPasswordPoolAction(formData: FormData) {
 
 export async function createShopItemAction(formData: FormData) {
   const session = await requireAdminSession();
+  const returnState = readAdminShopReturnState(formData);
   const parsed = createShopItemSchema.safeParse({
     shopId: formData.get("shopId"),
     name: formData.get("name"),
@@ -228,7 +249,14 @@ export async function createShopItemAction(formData: FormData) {
   });
 
   if (!parsed.success) {
-    redirect(buildAdminShopsRedirect("shopError", "invalid-shop-item"));
+    redirect(
+      buildAdminShopsRedirect({
+        shopError: "invalid-shop-item",
+        page: returnState.page,
+        mode: "create",
+        shopId: returnState.shopId,
+      }),
+    );
   }
 
   const shop = await prisma.shop.findUnique({
@@ -237,7 +265,14 @@ export async function createShopItemAction(formData: FormData) {
   });
 
   if (!shop) {
-    redirect(buildAdminShopsRedirect("shopError", "shop-not-found"));
+    redirect(
+      buildAdminShopsRedirect({
+        shopError: "shop-not-found",
+        page: returnState.page,
+        mode: "create",
+        shopId: returnState.shopId,
+      }),
+    );
   }
 
   try {
@@ -272,18 +307,31 @@ export async function createShopItemAction(formData: FormData) {
     });
   } catch (error) {
     if (error instanceof AdminShopActionError && error.code === "invalid-otp") {
-      redirect(buildAdminShopsRedirect("shopError", "invalid-otp"));
+      redirect(
+        buildAdminShopsRedirect({
+          shopError: "invalid-otp",
+          page: returnState.page,
+          mode: "create",
+          shopId: returnState.shopId ?? shop.id,
+        }),
+      );
     }
 
     throw error;
   }
 
   revalidateShopPaths(shop.slug);
-  redirect(buildAdminShopsRedirect("shopSuccess", "shop-item-created"));
+  redirect(
+    buildAdminShopsRedirect({
+      shopSuccess: "shop-item-created",
+      page: returnState.page,
+    }),
+  );
 }
 
 export async function updateShopItemAction(formData: FormData) {
   const session = await requireAdminSession();
+  const returnState = readAdminShopReturnState(formData);
   const parsed = updateShopItemSchema.safeParse({
     shopItemId: formData.get("shopItemId"),
     name: formData.get("name"),
@@ -297,7 +345,14 @@ export async function updateShopItemAction(formData: FormData) {
   });
 
   if (!parsed.success) {
-    redirect(buildAdminShopsRedirect("shopError", "invalid-shop-item"));
+    redirect(
+      buildAdminShopsRedirect({
+        shopError: "invalid-shop-item",
+        page: returnState.page,
+        mode: "edit",
+        itemId: returnState.itemId,
+      }),
+    );
   }
 
   const existingItem = await prisma.shopItem.findUnique({
@@ -313,7 +368,14 @@ export async function updateShopItemAction(formData: FormData) {
   });
 
   if (!existingItem) {
-    redirect(buildAdminShopsRedirect("shopError", "shop-item-not-found"));
+    redirect(
+      buildAdminShopsRedirect({
+        shopError: "shop-item-not-found",
+        page: returnState.page,
+        mode: "edit",
+        itemId: returnState.itemId,
+      }),
+    );
   }
 
   const beforeSnapshot = snapshotShopItem(existingItem);
@@ -350,12 +412,24 @@ export async function updateShopItemAction(formData: FormData) {
     });
   } catch (error) {
     if (error instanceof AdminShopActionError && error.code === "invalid-otp") {
-      redirect(buildAdminShopsRedirect("shopError", "invalid-otp"));
+      redirect(
+        buildAdminShopsRedirect({
+          shopError: "invalid-otp",
+          page: returnState.page,
+          mode: "edit",
+          itemId: returnState.itemId ?? existingItem.id,
+        }),
+      );
     }
 
     throw error;
   }
 
   revalidateShopPaths(existingItem.shop.slug);
-  redirect(buildAdminShopsRedirect("shopSuccess", "shop-item-updated"));
+  redirect(
+    buildAdminShopsRedirect({
+      shopSuccess: "shop-item-updated",
+      page: returnState.page,
+    }),
+  );
 }
