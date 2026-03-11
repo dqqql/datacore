@@ -82,3 +82,41 @@ export const refreshPasswordPoolSchema = z.object({
     .min(1, "至少生成 1 条密码")
     .max(1000, "首版单次最多生成 1000 条密码"),
 });
+
+const optionalShopText = z
+  .string()
+  .trim()
+  .max(240, "字段长度不能超过 240 个字符")
+  .optional()
+  .transform((value) => value || undefined);
+
+export const createShopItemSchema = z.object({
+  shopId: z.string().trim().min(1),
+  name: z.string().trim().min(1, "商品名称不能为空").max(60, "商品名称不能超过 60 个字符"),
+  description: optionalShopText,
+  category: z.string().trim().min(1, "分类不能为空").max(40, "分类不能超过 40 个字符"),
+  price: z.coerce.number().int("价格必须是整数").min(0, "价格不能小于 0").max(999999, "价格不能超过 999999"),
+  importedSource: optionalShopText,
+  sortOrder: z.coerce
+    .number()
+    .int("排序必须是整数")
+    .min(0, "排序不能小于 0")
+    .max(9999, "排序不能超过 9999"),
+  otpCode: z.string().trim().min(1, "请填写一次性密码").max(120, "一次性密码长度过长"),
+});
+
+export const updateShopItemSchema = z.object({
+  shopItemId: z.string().trim().min(1),
+  name: z.string().trim().min(1, "商品名称不能为空").max(60, "商品名称不能超过 60 个字符"),
+  description: optionalShopText,
+  category: z.string().trim().min(1, "分类不能为空").max(40, "分类不能超过 40 个字符"),
+  price: z.coerce.number().int("价格必须是整数").min(0, "价格不能小于 0").max(999999, "价格不能超过 999999"),
+  importedSource: optionalShopText,
+  sortOrder: z.coerce
+    .number()
+    .int("排序必须是整数")
+    .min(0, "排序不能小于 0")
+    .max(9999, "排序不能超过 9999"),
+  isActive: z.enum(["true", "false"]).transform((value) => value === "true"),
+  otpCode: z.string().trim().min(1, "请填写一次性密码").max(120, "一次性密码长度过长"),
+});

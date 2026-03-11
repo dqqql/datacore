@@ -1,15 +1,25 @@
 "use server";
 
 import { randomInt } from "crypto";
+import type { Prisma } from "@prisma/client";
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { requireAdminSession } from "@/lib/auth-helpers";
 import { prisma } from "@/lib/prisma";
-import { adjustUserHonorSchema, refreshPasswordPoolSchema } from "@/lib/schemas";
+import {
+  adjustUserHonorSchema,
+  createShopItemSchema,
+  refreshPasswordPoolSchema,
+  updateShopItemSchema,
+} from "@/lib/schemas";
 
 function buildRedirect(pathname: string, key: string, value: string) {
   const searchParams = new URLSearchParams({ [key]: value });
   return `${pathname}?${searchParams.toString()}`;
+}
+
+function buildAdminShopsRedirect(key: string, value: string) {
+  return buildRedirect("/admin/shops", key, value);
 }
 
 function generatePasswordCodes(count: number) {
@@ -19,6 +29,88 @@ function generatePasswordCodes(count: number) {
     const randomPart = randomInt(100000, 999999).toString();
     return `OTP-${prefix}-${String(index + 1).padStart(4, "0")}-${randomPart}`;
   });
+}
+
+function getShopPathFromSlug(shopSlug: string) {
+  if (shopSlug === "guild") {
+    return "/shops/guild";
+  }
+
+  if (shopSlug === "honor") {
+    return "/shops/honor";
+  }
+
+  return "/shops/rulebook";
+}
+
+class AdminShopActionError extends Error {
+  constructor(public readonly code: string) {
+    super(code);
+  }
+}
+
+function snapshotShopItem(item: {
+  shopId: string;
+  name: string;
+  description: string | null;
+  category: string;
+  price: number;
+  importedSource: string | null;
+  sortOrder: number;
+  isActive: boolean;
+}) {
+  return {
+    shopId: item.shopId,
+    name: item.name,
+    description: item.description,
+    category: item.category,
+    price: item.price,
+    importedSource: item.importedSource,
+    sortOrder: item.sortOrder,
+    isActive: item.isActive,
+  };
+}
+
+async function consumeOneTimePassword(tx: Prisma.TransactionClient, code: string) {
+  const password = await tx.oneTimePassword.findFirst({
+    where: {
+      code,
+      isUsed: false,
+      pool: {
+        isActive: true,
+      },
+    },
+    select: {
+      id: true,
+      poolId: true,
+    },
+  });
+
+  if (!password) {
+    throw new AdminShopActionError("invalid-otp");
+  }
+
+  const consumed = await tx.oneTimePassword.updateMany({
+    where: {
+      id: password.id,
+      isUsed: false,
+      poolId: password.poolId,
+    },
+    data: {
+      isUsed: true,
+      usedAt: new Date(),
+    },
+  });
+
+  if (consumed.count !== 1) {
+    throw new AdminShopActionError("invalid-otp");
+  }
+}
+
+function revalidateShopPaths(shopSlug: string) {
+  revalidatePath("/admin/shops");
+  revalidatePath("/admin/audit");
+  revalidatePath(getShopPathFromSlug(shopSlug));
 }
 
 export async function adjustUserHonorAction(formData: FormData) {
@@ -124,4 +216,150 @@ export async function refreshPasswordPoolAction(formData: FormData) {
   revalidatePath("/admin/passwords");
   revalidatePath("/admin/audit");
   redirect(buildRedirect("/admin/passwords", "otpSuccess", "pool-refreshed"));
+}
+
+export async function createShopItemAction(formData: FormData) {
+  const session = await requireAdminSession();
+  const parsed = createShopItemSchema.safeParse({
+    shopId: formData.get("shopId"),
+    name: formData.get("name"),
+    description: formData.get("description"),
+    category: formData.get("category"),
+    price: formData.get("price"),
+    importedSource: formData.get("importedSource"),
+    sortOrder: formData.get("sortOrder"),
+    otpCode: formData.get("otpCode"),
+  });
+
+  if (!parsed.success) {
+    redirect(buildAdminShopsRedirect("shopError", "invalid-shop-item"));
+  }
+
+  const shop = await prisma.shop.findUnique({
+    where: { id: parsed.data.shopId },
+    select: { id: true, slug: true, name: true },
+  });
+
+  if (!shop) {
+    redirect(buildAdminShopsRedirect("shopError", "shop-not-found"));
+  }
+
+  try {
+    await prisma.$transaction(async (tx) => {
+      await consumeOneTimePassword(tx, parsed.data.otpCode);
+
+      const createdItem = await tx.shopItem.create({
+        data: {
+          shopId: shop.id,
+          name: parsed.data.name,
+          description: parsed.data.description,
+          category: parsed.data.category,
+          price: parsed.data.price,
+          importedSource: parsed.data.importedSource,
+          sortOrder: parsed.data.sortOrder,
+          isActive: true,
+        },
+      });
+
+      await tx.auditLog.create({
+        data: {
+          actorUserId: session.user.id,
+          targetUserId: session.user.id,
+          action: "SHOP_ITEM_UPDATED",
+          entityType: "ShopItem",
+          entityId: createdItem.id,
+          beforeValue: null,
+          afterValue: JSON.stringify(snapshotShopItem(createdItem)),
+          note: `创建商店条目：${createdItem.name}（${shop.name}）`,
+        },
+      });
+    });
+  } catch (error) {
+    if (error instanceof AdminShopActionError && error.code === "invalid-otp") {
+      redirect(buildAdminShopsRedirect("shopError", "invalid-otp"));
+    }
+
+    throw error;
+  }
+
+  revalidateShopPaths(shop.slug);
+  redirect(buildAdminShopsRedirect("shopSuccess", "shop-item-created"));
+}
+
+export async function updateShopItemAction(formData: FormData) {
+  const session = await requireAdminSession();
+  const parsed = updateShopItemSchema.safeParse({
+    shopItemId: formData.get("shopItemId"),
+    name: formData.get("name"),
+    description: formData.get("description"),
+    category: formData.get("category"),
+    price: formData.get("price"),
+    importedSource: formData.get("importedSource"),
+    sortOrder: formData.get("sortOrder"),
+    isActive: formData.get("isActive"),
+    otpCode: formData.get("otpCode"),
+  });
+
+  if (!parsed.success) {
+    redirect(buildAdminShopsRedirect("shopError", "invalid-shop-item"));
+  }
+
+  const existingItem = await prisma.shopItem.findUnique({
+    where: { id: parsed.data.shopItemId },
+    include: {
+      shop: {
+        select: {
+          slug: true,
+          name: true,
+        },
+      },
+    },
+  });
+
+  if (!existingItem) {
+    redirect(buildAdminShopsRedirect("shopError", "shop-item-not-found"));
+  }
+
+  const beforeSnapshot = snapshotShopItem(existingItem);
+
+  try {
+    await prisma.$transaction(async (tx) => {
+      await consumeOneTimePassword(tx, parsed.data.otpCode);
+
+      const updatedItem = await tx.shopItem.update({
+        where: { id: existingItem.id },
+        data: {
+          name: parsed.data.name,
+          description: parsed.data.description,
+          category: parsed.data.category,
+          price: parsed.data.price,
+          importedSource: parsed.data.importedSource,
+          sortOrder: parsed.data.sortOrder,
+          isActive: parsed.data.isActive,
+        },
+      });
+
+      await tx.auditLog.create({
+        data: {
+          actorUserId: session.user.id,
+          targetUserId: session.user.id,
+          action: "SHOP_ITEM_UPDATED",
+          entityType: "ShopItem",
+          entityId: updatedItem.id,
+          beforeValue: JSON.stringify(beforeSnapshot),
+          afterValue: JSON.stringify(snapshotShopItem(updatedItem)),
+          note: `更新商店条目：${updatedItem.name}（${existingItem.shop.name}）`,
+        },
+      });
+    });
+  } catch (error) {
+    if (error instanceof AdminShopActionError && error.code === "invalid-otp") {
+      redirect(buildAdminShopsRedirect("shopError", "invalid-otp"));
+    }
+
+    throw error;
+  }
+
+  revalidateShopPaths(existingItem.shop.slug);
+  redirect(buildAdminShopsRedirect("shopSuccess", "shop-item-updated"));
 }
