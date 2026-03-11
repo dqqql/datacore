@@ -1,11 +1,13 @@
 import type { CurrencyType, ShopType } from "@prisma/client";
 import { prisma } from "@/lib/prisma";
+import { loadSrdItemsFromFile } from "@/lib/srd-parser";
 
 type DefaultShopItem = {
   name: string;
   description?: string;
   category: string;
   price: number;
+  priceLabel?: string;
   importedSource?: string;
   sortOrder: number;
 };
@@ -20,7 +22,7 @@ type DefaultShop = {
   items: DefaultShopItem[];
 };
 
-const defaultShops: DefaultShop[] = [
+const baseShops: DefaultShop[] = [
   {
     slug: "guild",
     name: "公会商店",
@@ -92,28 +94,12 @@ const defaultShops: DefaultShop[] = [
     sortOrder: 3,
     items: [
       {
-        name: "治疗药水",
-        description: "来自规则书的基础药剂条目。",
-        category: "药剂",
-        price: 50,
-        importedSource: "SRD",
-        sortOrder: 1,
-      },
-      {
-        name: "长剑",
-        description: "基础武器条目，供规则书目录展示。",
-        category: "武器",
-        price: 15,
-        importedSource: "SRD",
-        sortOrder: 2,
-      },
-      {
         name: "灰塔徽记",
-        description: "西征自定义物品，占位管理员手工维护入口。",
+        description: "西征自定义物品，保留给管理员手工维护。",
         category: "凭证",
         price: 20,
         importedSource: "西征自定义",
-        sortOrder: 3,
+        sortOrder: 999999,
       },
     ],
   },
@@ -129,6 +115,17 @@ async function ensureShopItems(shopId: string, items: DefaultShopItem[]) {
     });
 
     if (existing) {
+      await prisma.shopItem.update({
+        where: { id: existing.id },
+        data: {
+          description: item.description,
+          category: item.category,
+          price: item.price,
+          priceLabel: item.priceLabel,
+          importedSource: item.importedSource,
+          sortOrder: item.sortOrder,
+        },
+      });
       continue;
     }
 
@@ -139,6 +136,7 @@ async function ensureShopItems(shopId: string, items: DefaultShopItem[]) {
         description: item.description,
         category: item.category,
         price: item.price,
+        priceLabel: item.priceLabel,
         importedSource: item.importedSource,
         sortOrder: item.sortOrder,
       },
@@ -147,6 +145,16 @@ async function ensureShopItems(shopId: string, items: DefaultShopItem[]) {
 }
 
 export async function ensureDefaultShops() {
+  const srdItems = await loadSrdItemsFromFile();
+  const defaultShops: DefaultShop[] = baseShops.map((shop) =>
+    shop.slug === "rulebook"
+      ? {
+          ...shop,
+          items: [...srdItems, ...shop.items],
+        }
+      : shop,
+  );
+
   for (const shop of defaultShops) {
     const record = await prisma.shop.upsert({
       where: { slug: shop.slug },

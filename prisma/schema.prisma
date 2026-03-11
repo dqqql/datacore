@@ -115,6 +115,7 @@ model ShopItem {
   description    String?
   category       String
   price          Int
+  priceLabel     String?
   isActive       Boolean         @default(true)
   importedSource String?
   sortOrder      Int             @default(0)
