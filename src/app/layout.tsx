@@ -25,8 +25,11 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="zh-CN">
-      <body className={`${headingFont.variable} ${bodyFont.variable} antialiased`}>
+    <html lang="zh-CN" suppressHydrationWarning>
+      <body
+        suppressHydrationWarning
+        className={`${headingFont.variable} ${bodyFont.variable} antialiased`}
+      >
         <div className="min-h-screen bg-[radial-gradient(circle_at_top,_rgba(182,145,87,0.18),_transparent_30%),linear-gradient(180deg,_#f7f0df_0%,_#efe3cb_100%)] text-[var(--color-ink-900)]">
           {children}
         </div>
