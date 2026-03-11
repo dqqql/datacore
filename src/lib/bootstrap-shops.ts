@@ -1,6 +1,5 @@
 import type { CurrencyType, ShopType } from "@prisma/client";
 import { prisma } from "@/lib/prisma";
-import { loadSrdItemsFromFile } from "@/lib/srd-parser";
 
 type DefaultShopItem = {
   name: string;
@@ -22,7 +21,7 @@ type DefaultShop = {
   items: DefaultShopItem[];
 };
 
-const baseShops: DefaultShop[] = [
+const defaultShops: DefaultShop[] = [
   {
     slug: "guild",
     name: "公会商店",
@@ -85,24 +84,6 @@ const baseShops: DefaultShop[] = [
       },
     ],
   },
-  {
-    slug: "rulebook",
-    name: "规则书物品",
-    type: "RULEBOOK",
-    currency: "GOLD",
-    description: "官方规则书与西征自定义物品入口。",
-    sortOrder: 3,
-    items: [
-      {
-        name: "灰塔徽记",
-        description: "西征自定义物品，保留给管理员手工维护。",
-        category: "凭证",
-        price: 20,
-        importedSource: "西征自定义",
-        sortOrder: 999999,
-      },
-    ],
-  },
 ];
 
 async function ensureShopItems(shopId: string, items: DefaultShopItem[]) {
@@ -145,15 +126,15 @@ async function ensureShopItems(shopId: string, items: DefaultShopItem[]) {
 }
 
 export async function ensureDefaultShops() {
-  const srdItems = await loadSrdItemsFromFile();
-  const defaultShops: DefaultShop[] = baseShops.map((shop) =>
-    shop.slug === "rulebook"
-      ? {
-          ...shop,
-          items: [...srdItems, ...shop.items],
-        }
-      : shop,
-  );
+  const allowedShopSlugs = defaultShops.map((shop) => shop.slug);
+
+  await prisma.shop.deleteMany({
+    where: {
+      slug: {
+        notIn: allowedShopSlugs,
+      },
+    },
+  });
 
   for (const shop of defaultShops) {
     const record = await prisma.shop.upsert({

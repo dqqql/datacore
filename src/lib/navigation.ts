@@ -14,7 +14,6 @@ export const navigationGroups = [
     items: [
       { label: "公会商店", href: "/shops/guild", badge: "金币" },
       { label: "荣誉商店", href: "/shops/honor", badge: "荣誉" },
-      { label: "规则书物品", href: "/shops/rulebook", badge: "分类" },
     ],
   },
   {

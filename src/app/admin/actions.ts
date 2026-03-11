@@ -32,15 +32,11 @@ function generatePasswordCodes(count: number) {
 }
 
 function getShopPathFromSlug(shopSlug: string) {
-  if (shopSlug === "guild") {
-    return "/shops/guild";
-  }
-
   if (shopSlug === "honor") {
     return "/shops/honor";
   }
 
-  return "/shops/rulebook";
+  return "/shops/guild";
 }
 
 class AdminShopActionError extends Error {

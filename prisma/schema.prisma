@@ -20,7 +20,6 @@ enum CharacterStatus {
 enum ShopType {
   GUILD
   HONOR
-  RULEBOOK
 }
 
 enum CurrencyType {

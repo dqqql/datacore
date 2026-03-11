@@ -13,15 +13,11 @@ function buildRedirect(pathname: string, key: string, value: string) {
 }
 
 function getShopPathFromSlug(shopSlug: string) {
-  if (shopSlug === "guild") {
-    return "/shops/guild";
-  }
-
   if (shopSlug === "honor") {
     return "/shops/honor";
   }
 
-  return "/shops/rulebook";
+  return "/shops/guild";
 }
 
 class ShopActionError extends Error {
