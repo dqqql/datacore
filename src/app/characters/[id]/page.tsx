@@ -121,7 +121,7 @@ export default async function CharacterDetailPage({ params, searchParams }: Char
   return (
     <AppShell
       title={`角色详情：${character.name}`}
-      description="这里现在已经接入真实角色读写。当前这一轮先把背包真实读写与私人物品录入闭环做完整，后续再顺着接商店购买、回收和玩家交易。"
+      description="这里集中处理当前角色的金币、声望、背包、私人物品交易和公共物品回收。"
       badge="Character Detail"
     >
       <section className="grid gap-6 xl:grid-cols-[0.95fr_1.05fr]">

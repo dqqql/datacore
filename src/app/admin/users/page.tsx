@@ -23,7 +23,7 @@ const honorMessages = {
 const characterMessages = {
   invalid: "角色恢复失败，请刷新页面后重试。",
   notFound: "目标角色不存在，或已经不是归档状态。",
-  restored: "角色已恢复，后续会重新出现在玩家角色列表中。",
+  restored: "角色已恢复，并会重新出现在玩家角色列表中。",
 } as const;
 
 export default async function AdminUsersPage({ searchParams }: AdminUsersPageProps) {

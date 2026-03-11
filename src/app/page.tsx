@@ -14,8 +14,8 @@ export default function Home() {
   return (
     <AppShell
       title="西征模式数据管理中心"
-      description="首版骨架已经完成初始化，当前重点是先把角色、背包、公共商店和玩家交易的主链路做稳。"
-      badge="MVP Skeleton"
+      description="首版主流程已经跑通，当前阶段以上线前收尾、手工验收和细节校准为主。"
+      badge="MVP Ready"
     >
       <div className="grid gap-6 xl:grid-cols-[1.25fr_0.95fr]">
         <section className="panel rounded-[28px] p-6">
@@ -24,12 +24,12 @@ export default function Home() {
               Current Focus
             </span>
             <h2 className="section-title text-4xl font-semibold text-[var(--color-ink-900)]">
-              以表格可读性为主的中世纪魔法风骨架
+              以表格可读性为主的中世纪魔法数据台
             </h2>
             <p className="max-w-2xl text-sm leading-7 text-[var(--muted)] sm:text-base">
               风格保持克制，只用羊皮纸、铜金边框和淡淡的法术纹理做氛围，
-              不让视觉装饰压过数据本身。接下来进入的是真正会影响后续 bug 成本的阶段：
-              数据模型、认证和交易事务。
+              不让视觉装饰压过数据本身。当前重点已经从搭骨架转到验收前收尾：
+              核对规则、收敛文案、确认交易与后台行为一致。
             </p>
           </div>
 
@@ -87,11 +87,11 @@ export default function Home() {
       </div>
 
       <section className="mt-6 panel rounded-[28px] p-6">
-        <div className="mb-4 flex flex-col gap-2 sm:flex-row sm:items-end sm:justify-between">
-          <div>
-            <h3 className="section-title text-2xl font-semibold">数据骨架预览</h3>
+          <div className="mb-4 flex flex-col gap-2 sm:flex-row sm:items-end sm:justify-between">
+            <div>
+            <h3 className="section-title text-2xl font-semibold">当前模块状态</h3>
             <p className="mt-1 text-sm text-[var(--muted)]">
-              先把表格结构和状态层级看清楚，后续页面就不会轻易走偏。
+              这里展示首版关键模块的当前落地情况，方便上线前快速核对。
             </p>
           </div>
           <span className="text-xs font-semibold uppercase tracking-[0.2em] text-[var(--accent-strong)]">
@@ -102,11 +102,11 @@ export default function Home() {
         <TablePreview
           columns={["模块", "主对象", "关键规则", "当前状态"]}
           rows={[
-            ["认证", "User", "管理员创建账号，中文账号名不可改", "待接入 Auth.js"],
-            ["角色", "Character", "首次登录强制创建首角色", "数据模型已预留"],
-            ["背包", "InventoryItem", "公共与私人分流，私人整条挂单", "数据模型已预留"],
-            ["公共商店", "Shop / ShopItem", "按当前售价结算，后台改条目需一次性密码", "页面骨架已就位"],
-            ["玩家交易", "MarketListing", "自动扣款、自动转移，不支持议价", "页面骨架已就位"],
+            ["认证", "User", "管理员创建账号，中文账号名不可改", "已接入登录与角色权限"],
+            ["角色", "Character", "首次登录强制创建首角色", "已支持创建、切换、归档与恢复"],
+            ["背包", "InventoryItem", "公共与私人分流，私人整条挂单", "已支持真实读写"],
+            ["公共商店", "Shop / ShopItem", "按当前售价结算，后台改条目需一次性密码", "已支持购买、回收和后台维护"],
+            ["玩家交易", "MarketListing", "自动扣款、自动转移，不支持议价", "已支持上架、下架与自动成交"],
           ]}
         />
       </section>

@@ -38,7 +38,7 @@ export default async function CharactersPage({ searchParams }: CharactersPagePro
   return (
     <AppShell
       title="角色管理"
-      description="这里已经接入真实角色数据。你可以新增角色，也可以切换当前角色，后续商店和交易都将围绕当前角色进行。"
+      description="这里展示当前账号的活跃角色。你可以新增、切换或归档角色，商店和交易会围绕当前角色运行。"
       badge="Characters"
     >
       <section className="grid gap-6 xl:grid-cols-[1.15fr_0.85fr]">
@@ -132,7 +132,7 @@ export default async function CharactersPage({ searchParams }: CharactersPagePro
         <article className="panel rounded-[28px] p-6">
           <h3 className="section-title text-2xl font-semibold">新增角色</h3>
           <p className="mt-2 text-sm leading-6 text-[var(--muted)]">
-            新建角色后会自动切换为当前角色，方便你直接进入后续的金币、声望和背包管理。
+            新建角色后会自动切换为当前角色，方便你直接进入金币、声望和背包管理。
           </p>
 
           <form action={createCharacterAction} className="mt-5 space-y-4">

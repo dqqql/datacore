@@ -40,10 +40,10 @@ export function FeaturePage({
         <article className="panel rounded-[28px] p-6">
           <div className="mb-4">
             <h3 className="section-title text-2xl font-semibold text-[var(--color-ink-900)]">
-              页面预览表
+              当前目录视图
             </h3>
             <p className="mt-2 text-sm leading-6 text-[var(--muted)]">
-              这里先用可读性优先的表格预览结构，等接口接入后替换成真实数据。
+              这里按可读性优先展示目录信息，便于先核对分类、来源和条目组织方式。
             </p>
           </div>
           <TablePreview columns={columns} rows={rows} />

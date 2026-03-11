@@ -10,7 +10,7 @@ export default async function DashboardPage() {
   return (
     <AppShell
       title={`欢迎回来，${user.displayName}`}
-      description="这里是当前账号的主控制台。现在已经接入了登录、当前角色识别和首角色引导，后续会继续把商店与交易真正接上。"
+      description="这里是当前账号的主控制台。主流程已经接到真实数据，当前用于汇总角色、荣誉值和各业务入口。"
       badge={session.user.role === "ADMIN" ? "Admin Session" : "Player Session"}
     >
       <section className="grid gap-6 lg:grid-cols-3">
@@ -37,7 +37,7 @@ export default async function DashboardPage() {
             <div>
               <h3 className="section-title text-2xl font-semibold">当前角色摘要</h3>
               <p className="mt-2 text-sm leading-6 text-[var(--muted)]">
-                这里读取的是数据库里的真实角色信息，不再只是占位内容。
+                这里展示的是当前选中角色的实时金币和声望，用于快速确认后续购买与交易基线。
               </p>
             </div>
             {currentCharacter ? (
@@ -74,10 +74,10 @@ export default async function DashboardPage() {
           <h3 className="section-title text-2xl font-semibold">快捷入口</h3>
           <div className="mt-4 grid gap-3">
             {[
-              { label: "角色管理", href: "/characters", detail: "切换当前角色，新增角色" },
-              { label: "玩家交易", href: "/market", detail: "后续接入真实挂单购买" },
-              { label: "公会商店", href: "/shops/guild", detail: "后续接入金币结算" },
-              { label: "荣誉商店", href: "/shops/honor", detail: "后续接入荣誉结算" },
+              { label: "角色管理", href: "/characters", detail: "切换当前角色，新增或归档角色" },
+              { label: "玩家交易", href: "/market", detail: "查看挂单、下架自己的物品或直接购买" },
+              { label: "公会商店", href: "/shops/guild", detail: "使用当前角色金币购买公共物品" },
+              { label: "荣誉商店", href: "/shops/honor", detail: "使用账号荣誉值购买并归属到当前角色" },
             ].map((item) => (
               <Link
                 key={item.href}
