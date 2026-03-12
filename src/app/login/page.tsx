@@ -12,9 +12,9 @@ export default async function LoginPage() {
 
   return (
     <AppShell
-      title="登录与身份验证"
-      description="当前版本采用账号密码登录。账号由管理员创建，管理员密码通过独立挂载文件维护。"
-      badge="登录"
+      title="身份登记"
+      description="当前版本采用账号密码登记身份。账号由管理员创建，管理员密码通过独立挂载文件维护。"
+      badge="身份登记"
     >
       <section className="grid gap-6 xl:grid-cols-[0.9fr_1.1fr]">
         <article className="panel rounded-[28px] p-6">

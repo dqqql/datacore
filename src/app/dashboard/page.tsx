@@ -10,7 +10,7 @@ export default async function DashboardPage() {
   return (
     <AppShell
       title={`欢迎回来，${user.displayName}`}
-      description="这里是当前账号的总控台，集中展示角色、荣誉值与主要业务入口。"
+      description="这里是当前账号的控制台，集中展示角色、荣誉值与主要业务入口。"
       badge={session.user.role === "ADMIN" ? "管理员会话" : "玩家会话"}
     >
       <section className="grid gap-6 lg:grid-cols-3">
@@ -22,7 +22,7 @@ export default async function DashboardPage() {
         <SummaryCard
           title="当前角色"
           value={currentCharacter?.name ?? "未选择角色"}
-          detail="当前角色将影响背包、商店购买与玩家交易。"
+          detail="当前角色将影响行囊、补给处购买与集市交易。"
         />
         <SummaryCard
           title="可用角色数"
@@ -74,9 +74,9 @@ export default async function DashboardPage() {
           <h3 className="section-title text-2xl font-semibold">快捷入口</h3>
           <div className="mt-4 grid gap-3">
             {[
-              { label: "角色管理", href: "/characters", detail: "切换当前角色，新增或归档角色" },
-              { label: "玩家交易", href: "/market", detail: "浏览挂单、下架自己的物品或直接购买" },
-              { label: "公会商店", href: "/shops/guild", detail: "使用当前角色金币购买公共物品" },
+              { label: "角色卡册", href: "/characters", detail: "切换当前角色，新增或归档角色" },
+              { label: "冒险者集市", href: "/market", detail: "浏览寄售单、撤销自己的物品或直接入手" },
+              { label: "公会补给处", href: "/shops/guild", detail: "使用当前角色金币购买规则书物品" },
               { label: "荣誉商店", href: "/shops/honor", detail: "使用账号荣誉值购买并归属给当前角色" },
             ].map((item) => (
               <Link

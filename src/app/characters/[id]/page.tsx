@@ -27,39 +27,39 @@ type CharacterDetailPageProps = {
 };
 
 const inventoryMessages = {
-  invalid: "私人物品录入失败，请检查名称、数量与单价后重试。",
-  created: "私人物品已写入当前角色背包。",
+  invalid: "存放失败，请检查名称、数量与单价后重试。",
+  created: "战利品/私设物品已妥善存入当前角色行囊。",
 } as const;
 
 const sellbackMessages = {
-  invalid: "回收失败，请检查物品与数量后重试。",
-  unavailable: "该物品当前不可卖回系统商店。",
-  tooMany: "回收数量不能超过背包中的现有数量。",
-  completed: "回收成功，返还金额已写回对应货币。",
+  invalid: "典当失败，请检查物品与数量后重试。",
+  unavailable: "该物品当前不可典当给公会。",
+  tooMany: "典当数量不能超过行囊中的现有数量。",
+  completed: "半价典当成功，返还金额已写回对应货币。",
 } as const;
 
 const listingMessages = {
-  invalid: "上架或下架失败，请刷新页面后重试。",
-  unavailable: "该私人物品当前无法上架至市场。",
-  cancelUnavailable: "该挂单当前无法下架。",
-  created: "私人物品已上架至玩家交易市场。",
-  cancelled: "挂单已下架，物品已返回角色背包并恢复可操作状态。",
+  invalid: "寄售或撤销失败，请刷新页面后重试。",
+  unavailable: "该私设物品当前无法委托集市寄售。",
+  cancelUnavailable: "该寄售当前无法撤销。",
+  created: "私设物品已委托集市寄售。",
+  cancelled: "寄售已撤销，物品已返回角色行囊并恢复可操作状态。",
 } as const;
 
 function formatOwnershipType(type: "PUBLIC" | "PRIVATE") {
-  return type === "PRIVATE" ? "私人物品" : "公共物品";
+  return type === "PRIVATE" ? "私设物品" : "规则书物品";
 }
 
 function formatAuditAction(action: string) {
   const labels: Record<string, string> = {
     CHARACTER_GOLD_UPDATED: "金币调整",
     CHARACTER_REPUTATION_UPDATED: "声望调整",
-    PRIVATE_ITEM_CREATED: "录入私人物品",
-    MARKET_LISTED: "市场上架",
-    MARKET_CANCELLED: "市场下架",
-    MARKET_PURCHASED: "市场成交",
+    PRIVATE_ITEM_CREATED: "存放战利品",
+    MARKET_LISTED: "集市寄售",
+    MARKET_CANCELLED: "撤销寄售",
+    MARKET_PURCHASED: "集市入手",
     SHOP_PURCHASED: "商店购买",
-    SHOP_SELLBACK: "商店回收",
+    SHOP_SELLBACK: "半价典当",
   };
 
   return labels[action] ?? action;
@@ -137,7 +137,7 @@ export default async function CharacterDetailPage({ params, searchParams }: Char
   return (
     <AppShell
       title={`角色详情：${character.name}`}
-      description="这里集中处理当前角色的金币、声望、背包、私人物品交易与公共物品回收。"
+      description="这里集中处理当前角色的金币、声望、行囊、私设物品交易与规则书物品典当。"
       badge="角色详情"
     >
       <section className="grid gap-6 xl:grid-cols-[0.95fr_1.05fr]">
@@ -187,15 +187,15 @@ export default async function CharacterDetailPage({ params, searchParams }: Char
           <article className="panel rounded-[28px] p-6">
             <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
               <div>
-                <h3 className="section-title text-2xl font-semibold">背包概览</h3>
+                <h3 className="section-title text-2xl font-semibold">行囊概览</h3>
                 <p className="mt-2 text-sm leading-6 text-[var(--muted)]">
-                  当前背包直接读取数据库中的真实数据。你可以在此管理私人物品、查看公共物品，并执行市场相关操作。
+                  当前行囊直接读取数据库中的真实数据。你可以在此管理私设物品、查看规则书物品，并执行集市相关操作。
                 </p>
               </div>
 
               <div className="rounded-2xl border border-[var(--border-soft)] bg-[rgba(255,250,241,0.82)] px-4 py-3">
                 <p className="text-xs font-semibold uppercase tracking-[0.18em] text-[var(--color-ink-700)]">
-                  背包条目数
+                  行囊条目数
                 </p>
                 <p className="mt-1 text-lg font-semibold text-[var(--color-ink-900)]">
                   {character.inventoryItems.length}
@@ -254,7 +254,7 @@ export default async function CharacterDetailPage({ params, searchParams }: Char
                         <td>{formatOwnershipType(item.ownershipType)}</td>
                         <td className="numeric">{formatPrice(item.quantity)}</td>
                         <td className="numeric">{formatPrice(item.sourceShopItem?.price ?? item.unitPrice)}</td>
-                        <td>{item.isListed ? "已上架" : "背包中"}</td>
+                        <td>{item.isListed ? "寄售中" : "行囊中"}</td>
                         <td>
                           {item.ownershipType === "PRIVATE" ? (
                             item.isListed && item.marketListing ? (
@@ -268,7 +268,7 @@ export default async function CharacterDetailPage({ params, searchParams }: Char
                                   type="submit"
                                   className="focus-ring btn-secondary btn-compact"
                                 >
-                                  下架挂单
+                                  撤销寄售
                                 </button>
                               </form>
                             ) : (
@@ -282,7 +282,7 @@ export default async function CharacterDetailPage({ params, searchParams }: Char
                                   type="submit"
                                   className="focus-ring btn-secondary btn-compact"
                                 >
-                                  上架市场
+                                  委托寄售
                                 </button>
                               </form>
                             )
@@ -297,7 +297,7 @@ export default async function CharacterDetailPage({ params, searchParams }: Char
                   ) : (
                     <tr>
                       <td colSpan={6} className="text-sm leading-6 text-[var(--muted)]">
-                        当前角色尚无背包物品。你可以先在下方录入私人物品，后续商店购买所得也会自动写入此处。
+                        当前角色行囊空空如也。你可以先在下方存放战利品，后续公会补给处购入所得也会自动写入此处。
                       </td>
                     </tr>
                   )}
@@ -307,9 +307,9 @@ export default async function CharacterDetailPage({ params, searchParams }: Char
           </article>
 
           <article className="panel rounded-[28px] p-6">
-            <h3 className="section-title text-2xl font-semibold">录入私人物品</h3>
+            <h3 className="section-title text-2xl font-semibold">存放战利品/私设物品</h3>
             <p className="mt-2 text-sm leading-6 text-[var(--muted)]">
-              当前版本保留最小闭环，仅录入名称、描述、数量与单价四项基础信息，以确保背包与交易流程完整可用。
+              当前版本保留最小闭环，仅记录名称、描述、数量与单价四项基础信息，以确保行囊与交易流程完整可用。
             </p>
 
             <form action={createPrivateItemAction} className="mt-5 space-y-4">
@@ -372,22 +372,22 @@ export default async function CharacterDetailPage({ params, searchParams }: Char
 
               <div className="flex flex-col gap-3 border-t border-[var(--border-soft)] pt-4 sm:flex-row sm:items-center sm:justify-between">
                 <p className="text-sm leading-6 text-[var(--muted)]">
-                  录入后物品会直接写入当前角色背包，并生成一条私人物品创建审计记录。
+                  录入后物品会妥善存入当前角色行囊，并生成一条存放战利品审计记录。
                 </p>
                 <button
                   type="submit"
                   className="focus-ring btn-primary"
                 >
-                  写入背包
+                  存入行囊
                 </button>
               </div>
             </form>
           </article>
 
           <article className="panel rounded-[28px] p-6">
-            <h3 className="section-title text-2xl font-semibold">公共物品回收</h3>
+            <h3 className="section-title text-2xl font-semibold">规则书物品典当</h3>
             <p className="mt-2 text-sm leading-6 text-[var(--muted)]">
-              仅公共物品可卖回系统商店。回收金额按当前商店售价的一半计算，并直接返还至对应货币。
+              仅规则书物品可半价典当给公会。典当金额按当前公会售价的一半计算，并直接返还至对应货币。
             </p>
 
             {sellbackErrorMessage ? (
@@ -462,7 +462,7 @@ export default async function CharacterDetailPage({ params, searchParams }: Char
                   ) : (
                     <tr>
                       <td colSpan={5} className="text-sm leading-6 text-[var(--muted)]">
-                        当前角色尚无可回收的公共物品。后续从公会商店或荣誉商店购入后，会在此显示对应条目。
+                        当前角色尚无可典当的规则书物品。后续从公会补给处购入后，会在此显示对应条目。
                       </td>
                     </tr>
                   )}

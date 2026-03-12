@@ -168,7 +168,7 @@ export default async function AdminShopsPage({ searchParams }: AdminShopsPagePro
               </p>
             </div>
             <Link href={createItemHref} className="focus-ring btn-secondary btn-compact">
-              + 新增商品
+              + 调拨公会物资
             </Link>
           </div>
 

@@ -31,10 +31,10 @@ export function AppShell({ title, description, badge, children }: AppShellProps)
               Guild Ledger
             </p>
             <h1 className="section-title mt-3 text-3xl font-semibold text-[var(--color-ink-900)]">
-              西征数据管理中心
+              西征数据中心
             </h1>
             <p className="mt-3 text-sm leading-6 text-[var(--muted)]">
-              角色、背包、公共商店与玩家交易共用同一套数据账簿，当前以可读性、可追溯性与操作稳定性为优先。
+              角色、行囊、公会补给处与冒险者集市共用同一套数据账簿，当前以可读性、可追溯性与操作稳定性为优先。
             </p>
           </div>
 
