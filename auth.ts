@@ -6,6 +6,7 @@ import { ensureAdminUserFromFile } from "./src/lib/bootstrap-admin";
 import { loginSchema } from "./src/lib/schemas";
 
 export const { handlers, auth, signIn, signOut } = NextAuth({
+  trustHost: true,
   session: {
     strategy: "jwt",
   },
