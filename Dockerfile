@@ -11,18 +11,19 @@ RUN npm ci
 
 FROM base AS builder
 WORKDIR /app
-ENV DATABASE_URL="file:./prisma/dev.db"
+ENV DATABASE_URL="file:./sqlite/dev.db"
 COPY --from=deps /app/node_modules ./node_modules
 COPY . .
-RUN npx prisma generate
-RUN npx prisma db push
+RUN mkdir -p /app/prisma/sqlite
+RUN npx prisma generate --schema=./prisma/schema.prisma
+RUN npx prisma db push --schema=./prisma/schema.prisma
 RUN npm run build
 
 FROM base AS runner
 WORKDIR /app
 ENV NODE_ENV=production
 ENV PORT=3000
-ENV DATABASE_URL="file:./prisma/dev.db"
+ENV DATABASE_URL="file:./sqlite/dev.db"
 
 COPY package.json package-lock.json ./
 COPY --from=deps /app/node_modules ./node_modules
@@ -33,4 +34,4 @@ COPY --from=builder /app/prisma ./prisma
 
 EXPOSE 3000
 
-CMD ["sh", "-c", "./node_modules/.bin/prisma db push && node server.js"]
+CMD ["sh", "-c", "mkdir -p /app/prisma/sqlite && ./node_modules/.bin/prisma db push --schema=/app/prisma/schema.prisma && node server.js"]
