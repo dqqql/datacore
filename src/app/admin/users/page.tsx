@@ -4,6 +4,8 @@ import { createUserAction, restoreCharacterAction } from "@/app/characters/actio
 import { prisma } from "@/lib/prisma";
 import { requireAdminSession } from "@/lib/auth-helpers";
 
+export const dynamic = "force-dynamic";
+
 type AdminUsersPageProps = {
   searchParams: Promise<{
     honorError?: string;

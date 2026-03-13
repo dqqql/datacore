@@ -5,6 +5,8 @@ import { requireAdminSession } from "@/lib/auth-helpers";
 import { ensureDefaultShops } from "@/lib/bootstrap-shops";
 import { prisma } from "@/lib/prisma";
 
+export const dynamic = "force-dynamic";
+
 type AdminShopsPageProps = {
   searchParams: Promise<{
     shopError?: string;

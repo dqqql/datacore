@@ -3,6 +3,8 @@ import { refreshPasswordPoolAction } from "@/app/admin/actions";
 import { requireAdminSession } from "@/lib/auth-helpers";
 import { prisma } from "@/lib/prisma";
 
+export const dynamic = "force-dynamic";
+
 type AdminPasswordsPageProps = {
   searchParams: Promise<{
     otpError?: string;

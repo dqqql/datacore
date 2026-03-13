@@ -2,6 +2,8 @@ import { AppShell } from "@/components/app-shell";
 import { requireAdminSession } from "@/lib/auth-helpers";
 import { prisma } from "@/lib/prisma";
 
+export const dynamic = "force-dynamic";
+
 function formatAuditAction(action: string) {
   const labels: Record<string, string> = {
     CHARACTER_GOLD_UPDATED: "金币调整",

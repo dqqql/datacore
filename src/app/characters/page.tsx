@@ -7,6 +7,8 @@ import {
 } from "@/app/characters/actions";
 import { requirePlayerCharacter } from "@/lib/auth-helpers";
 
+export const dynamic = "force-dynamic";
+
 type CharactersPageProps = {
   searchParams: Promise<{
     characterError?: string;

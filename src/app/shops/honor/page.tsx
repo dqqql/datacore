@@ -4,6 +4,8 @@ import { ensureDefaultShops } from "@/lib/bootstrap-shops";
 import { requirePlayerCharacter } from "@/lib/auth-helpers";
 import { prisma } from "@/lib/prisma";
 
+export const dynamic = "force-dynamic";
+
 type HonorShopPageProps = {
   searchParams: Promise<{
     shopError?: string;

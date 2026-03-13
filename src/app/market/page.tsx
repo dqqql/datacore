@@ -6,6 +6,8 @@ import {
   purchaseMarketListingAction,
 } from "@/app/market/actions";
 
+export const dynamic = "force-dynamic";
+
 type MarketPageProps = {
   searchParams: Promise<{
     marketError?: string;
