@@ -26,3 +26,8 @@ export async function loginAction(_: LoginFormState, formData: FormData): Promis
     throw error;
   }
 }
+
+export async function logoutAction() {
+  const { signOut } = await import("../../../auth");
+  await signOut({ redirectTo: "/login" });
+}

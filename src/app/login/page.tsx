@@ -2,13 +2,11 @@ import { redirect } from "next/navigation";
 import { auth } from "../../../auth";
 import { AppShell } from "@/components/app-shell";
 import { LoginForm } from "@/components/login-form";
+import { LogoutButton } from "@/components/logout-button";
+import Link from "next/link";
 
 export default async function LoginPage() {
   const session = await auth();
-
-  if (session?.user) {
-    redirect("/dashboard");
-  }
 
   return (
     <AppShell
@@ -45,16 +43,38 @@ export default async function LoginPage() {
 
         <article className="panel rounded-[28px] p-6">
           <div className="mx-auto max-w-md">
-            <div className="mb-5">
-              <p className="text-xs font-semibold uppercase tracking-[0.22em] text-[var(--accent-strong)]">
-                Credentials Login
-              </p>
-              <h3 className="section-title mt-3 text-2xl font-semibold text-[var(--color-ink-900)]">
-                输入账号与密码
-              </h3>
-            </div>
+            {session?.user ? (
+              <div className="rounded-2xl border border-[var(--border-soft)] bg-[rgba(255,250,241,0.86)] p-6 text-center">
+                <div className="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-full bg-[rgba(127,92,47,0.12)] text-2xl font-semibold text-[var(--accent-strong)]">
+                  {session.user.name?.[0]?.toUpperCase() ?? "U"}
+                </div>
+                <h4 className="text-lg font-semibold text-[var(--color-ink-900)]">
+                  当前身份：{session.user.name ?? session.user.username}
+                </h4>
+                <p className="mt-2 text-sm text-[var(--muted)]">
+                  你已经登记在册。你可以直接返回控制台，或是退出当前账号。
+                </p>
+                <div className="mt-6 flex flex-col gap-3">
+                  <Link href="/dashboard" className="focus-ring btn-primary w-full">
+                    返回控制台
+                  </Link>
+                  <LogoutButton />
+                </div>
+              </div>
+            ) : (
+              <>
+                <div className="mb-5">
+                  <p className="text-xs font-semibold uppercase tracking-[0.22em] text-[var(--accent-strong)]">
+                    Credentials Login
+                  </p>
+                  <h3 className="section-title mt-3 text-2xl font-semibold text-[var(--color-ink-900)]">
+                    输入账号与密码
+                  </h3>
+                </div>
 
-            <LoginForm />
+                <LoginForm />
+              </>
+            )}
           </div>
         </article>
       </section>

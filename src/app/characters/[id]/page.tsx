@@ -193,8 +193,8 @@ export default async function CharacterDetailPage({ params, searchParams }: Char
                 </p>
               </div>
 
-              <div className="rounded-2xl border border-[var(--border-soft)] bg-[rgba(255,250,241,0.82)] px-4 py-3">
-                <p className="text-xs font-semibold uppercase tracking-[0.18em] text-[var(--color-ink-700)]">
+              <div className="shrink-0 rounded-2xl border border-[var(--border-soft)] bg-[rgba(255,250,241,0.82)] px-4 py-3">
+                <p className="whitespace-nowrap text-xs font-semibold uppercase tracking-[0.18em] text-[var(--color-ink-700)]">
                   行囊条目数
                 </p>
                 <p className="mt-1 text-lg font-semibold text-[var(--color-ink-900)]">
