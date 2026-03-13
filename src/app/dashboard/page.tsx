@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { AppShell } from "@/components/app-shell";
 import { SummaryCard } from "@/components/summary-card";
+import { PaginatedPanel, type PanelItem } from "@/components/paginated-panel";
 import { requirePlayerCharacter } from "@/lib/auth-helpers";
 import { prisma } from "@/lib/prisma";
 
@@ -12,6 +13,8 @@ function formatDateLabel(value: Date) {
   return new Intl.DateTimeFormat("zh-CN", {
     month: "numeric",
     day: "numeric",
+    hour: "2-digit",
+    minute: "2-digit",
   }).format(value);
 }
 
@@ -19,183 +22,196 @@ function formatRole(role: "ADMIN" | "PLAYER") {
   return role === "ADMIN" ? "管理员" : "玩家";
 }
 
+function formatAuditValue(raw: string | null | undefined): string | undefined {
+  if (!raw) return undefined;
+  try {
+    const obj = JSON.parse(raw);
+    if (typeof obj === "object" && obj !== null) {
+      // Show only meaningful numeric/string fields
+      const parts: string[] = [];
+      if (obj.price !== undefined) parts.push(`价格 ${formatNumber(Number(obj.price))}`);
+      if (obj.gold !== undefined) parts.push(`金币 ${formatNumber(Number(obj.gold))}`);
+      if (obj.honor !== undefined) parts.push(`荣誉 ${formatNumber(Number(obj.honor))}`);
+      if (obj.reputation !== undefined) parts.push(`声望 ${formatNumber(Number(obj.reputation))}`);
+      if (obj.count !== undefined) parts.push(`数量 ${formatNumber(Number(obj.count))}`);
+      if (obj.quantity !== undefined) parts.push(`数量 ${formatNumber(Number(obj.quantity))}`);
+      if (obj.role === "buyer") parts.push("买家成交");
+      if (obj.role === "seller") parts.push("卖家成交");
+      return parts.length > 0 ? parts.join("，") : "[操作记录]";
+    }
+  } catch {
+    // not JSON, return as-is
+  }
+  return raw;
+}
+
+function formatAuditAction(action: string) {
+  const labels: Record<string, string> = {
+    CHARACTER_GOLD_UPDATED: "金币调整",
+    CHARACTER_REPUTATION_UPDATED: "声望调整",
+    USER_HONOR_UPDATED: "荣誉调整",
+    PRIVATE_ITEM_CREATED: "存放战利品",
+    MARKET_LISTED: "集市寄售",
+    MARKET_CANCELLED: "撤销寄售",
+    MARKET_PURCHASED: "集市成交",
+    SHOP_PURCHASED: "补给购入",
+    SHOP_SELLBACK: "半价典当",
+    SHOP_ITEM_UPDATED: "商品调整",
+    SHOP_PASSWORD_POOL_REFRESHED: "密码池刷新",
+    CHARACTER_ARCHIVED: "角色归档",
+    CHARACTER_RESTORED: "角色恢复",
+  };
+  return labels[action] ?? action;
+}
+
 export default async function DashboardPage() {
   const context = await requirePlayerCharacter();
   const { session, user, characters, currentCharacter } = context;
   const isAdmin = session.user.role === "ADMIN";
 
-  const [registeredPlayers, activeCharacterCount, archivedCharacterCount, recentPlayers, recentCharacters] =
-    await Promise.all([
-      prisma.user.count({
-        where: {
-          role: "PLAYER",
-          isActive: true,
-        },
-      }),
-      prisma.character.count({
-        where: {
-          status: "ACTIVE",
-        },
-      }),
-      prisma.character.count({
-        where: {
-          status: "ARCHIVED",
-        },
-      }),
-      isAdmin
-        ? prisma.user.findMany({
-            where: {
-              role: "PLAYER",
-              isActive: true,
-            },
-            orderBy: {
-              createdAt: "desc",
-            },
-            take: 5,
-            include: {
-              characters: {
-                where: {
-                  status: "ACTIVE",
-                },
-                select: {
-                  id: true,
-                },
-              },
-            },
-          })
-        : Promise.resolve([]),
-      isAdmin
-        ? prisma.character.findMany({
-            where: {
-              status: "ACTIVE",
-            },
-            orderBy: {
-              createdAt: "desc",
-            },
-            take: 5,
-            include: {
-              user: {
-                select: {
-                  displayName: true,
-                },
-              },
-            },
-          })
-        : Promise.resolve([]),
-    ]);
+  const [
+    registeredPlayers,
+    activeCharacterCount,
+    archivedCharacterCount,
+    recentPlayers,
+    recentCharacters,
+    recentMarketSales,
+    recentAuditLogs,
+  ] = await Promise.all([
+    prisma.user.count({ where: { role: "PLAYER", isActive: true } }),
+    prisma.character.count({ where: { status: "ACTIVE" } }),
+    prisma.character.count({ where: { status: "ARCHIVED" } }),
+    isAdmin
+      ? prisma.user.findMany({
+          where: { role: "PLAYER", isActive: true },
+          orderBy: { createdAt: "desc" },
+          take: 9,
+          include: {
+            characters: { where: { status: "ACTIVE" }, select: { id: true } },
+          },
+        })
+      : Promise.resolve([]),
+    isAdmin
+      ? prisma.character.findMany({
+          where: { status: "ACTIVE" },
+          orderBy: { createdAt: "desc" },
+          take: 9,
+          include: { user: { select: { displayName: true } } },
+        })
+      : prisma.character.findMany({
+          where: { userId: user.id, status: "ACTIVE" },
+          orderBy: { createdAt: "desc" },
+          take: 9,
+        }),
+    prisma.marketListing.findMany({
+      where: isAdmin ? { status: "SOLD" } : {
+        status: "SOLD",
+        sellerCharacter: { userId: user.id },
+      },
+      orderBy: { soldAt: "desc" },
+      take: 9,
+      include: {
+        inventoryItem: { select: { name: true, quantity: true } },
+        sellerCharacter: { select: { name: true } },
+        buyerCharacter: { select: { name: true } },
+      },
+    }),
+    prisma.auditLog.findMany({
+      where: isAdmin ? {} : {
+        OR: [
+          { actorUserId: user.id },
+          { targetUserId: user.id },
+          { targetCharacter: { userId: user.id } },
+        ],
+      },
+      orderBy: { createdAt: "desc" },
+      take: 9,
+      include: {
+        actorUser: { select: { displayName: true } },
+        targetUser: { select: { displayName: true } },
+        targetCharacter: { select: { name: true } },
+      },
+    }),
+  ]);
 
   const overviewCards = isAdmin
     ? [
-        {
-          title: "登记玩家数",
-          value: formatNumber(registeredPlayers),
-          detail: "仅统计当前仍启用的普通玩家账号。",
-        },
-        {
-          title: "活跃角色数",
-          value: formatNumber(activeCharacterCount),
-          detail: "角色卡册、补给处与集市主流程都基于活跃角色。",
-        },
-        {
-          title: "归档角色数",
-          value: formatNumber(archivedCharacterCount),
-          detail: "归档角色仍保留数据，可由管理员恢复。",
-        },
-        {
-          title: "当前账号荣誉",
-          value: formatNumber(user.honor),
-          detail: "管理员账号荣誉仍按账号维度记录。",
-        },
+        { title: "注册玩家数", value: formatNumber(registeredPlayers), detail: "当前启用的活跃玩家账号" },
+        { title: "活跃角色数", value: formatNumber(activeCharacterCount), detail: "正在运行于主流程的角色" },
+        { title: "归档角色数", value: formatNumber(archivedCharacterCount), detail: "保留数据，管理员可恢复" },
+        { title: "管理员荣誉", value: formatNumber(user.honor), detail: "当前管理员账号荣誉值" },
       ]
     : [
-        {
-          title: "账号荣誉值",
-          value: formatNumber(user.honor),
-          detail: "荣誉值绑定账号，仅允许管理员发放或扣减。",
-        },
-        {
-          title: "当前角色",
-          value: currentCharacter?.name ?? "未选择角色",
-          detail: "当前角色将影响补给、行囊与集市交易。",
-        },
-        {
-          title: "我的角色数",
-          value: formatNumber(characters.length),
-          detail: "当前仅统计活跃角色，归档角色不会出现在这里。",
-        },
-        {
-          title: "登记玩家数",
-          value: formatNumber(registeredPlayers),
-          detail: "方便快速感知当前西征账簿的活跃规模。",
-        },
+        { title: "账号荣誉值", value: formatNumber(user.honor), detail: "仅管理员可发放或扣减" },
+        { title: "当前角色", value: currentCharacter?.name ?? "未选择", detail: "影响补给与集市交易" },
+        { title: "我的角色数", value: formatNumber(characters.length), detail: "活跃角色，不含已归档" },
+        { title: "登记玩家数", value: formatNumber(registeredPlayers), detail: "当前西征账簿活跃规模" },
       ];
 
-  const playerPreviewItems = isAdmin
-    ? recentPlayers.map((player) => ({
-        id: player.id,
-        title: player.displayName,
-        eyebrow: formatRole(player.role),
-        primary: `荣誉 ${formatNumber(player.honor)}`,
-        secondary: `${player.characters.length} 个活跃角色`,
-        meta: `登记于 ${formatDateLabel(player.createdAt)}`,
+  // ── Player panel items ──
+  const playerItems: PanelItem[] = isAdmin
+    ? recentPlayers.map((p) => ({
+        id: p.id,
+        eyebrow: formatRole(p.role),
+        title: p.displayName,
+        primary: `荣誉 ${formatNumber(p.honor)}`,
+        secondary: `${p.characters.length} 个活跃角色`,
+        meta: `登记于 ${formatDateLabel(p.createdAt)}`,
       }))
     : [
         {
           id: user.id,
-          title: user.displayName,
           eyebrow: formatRole(user.role),
+          title: user.displayName,
           primary: `荣誉 ${formatNumber(user.honor)}`,
           secondary: `${characters.length} 个活跃角色`,
-          meta: currentCharacter
-            ? `当前角色：${currentCharacter.name}`
-            : "当前尚未选定角色",
+          meta: currentCharacter ? `当前角色：${currentCharacter.name}` : "尚未选定角色",
         },
       ];
 
-  const characterPreviewItems = isAdmin
-    ? recentCharacters.map((character) => ({
-        id: character.id,
-        title: character.name,
-        eyebrow: `归属 ${character.user.displayName}`,
-        primary: `金币 ${formatNumber(character.gold)}`,
-        secondary: `声望 ${formatNumber(character.reputation)}`,
-        meta: `建立于 ${formatDateLabel(character.createdAt)}`,
-      }))
-    : [...characters]
-        .sort((left, right) => {
-          if (left.id === currentCharacter?.id) {
-            return -1;
-          }
-
-          if (right.id === currentCharacter?.id) {
-            return 1;
-          }
-
-          return left.createdAt.getTime() - right.createdAt.getTime();
+  // ── Character panel items ──
+  const characterItems: PanelItem[] = (
+    isAdmin
+      ? recentCharacters
+      : [...characters].sort((a, b) => {
+          if (a.id === currentCharacter?.id) return -1;
+          if (b.id === currentCharacter?.id) return 1;
+          return a.createdAt.getTime() - b.createdAt.getTime();
         })
-        .slice(0, 5)
-        .map((character) => ({
-          id: character.id,
-          title: character.name,
-          eyebrow: character.id === currentCharacter?.id ? "当前角色" : "角色预览",
-          primary: `金币 ${formatNumber(character.gold)}`,
-          secondary: `声望 ${formatNumber(character.reputation)}`,
-          meta: `建立于 ${formatDateLabel(character.createdAt)}`,
-        }));
+  ).map((c) => {
+    const ownerName = "user" in c ? (c as { user: { displayName: string } }).user.displayName : undefined;
+    return {
+      id: c.id,
+      eyebrow: isAdmin && ownerName ? `归属 ${ownerName}` : (c.id === currentCharacter?.id ? "当前角色" : "角色"),
+      title: c.name,
+      primary: `金币 ${formatNumber(c.gold)}`,
+      secondary: `声望 ${formatNumber(c.reputation)}`,
+      meta: `建立于 ${formatDateLabel(c.createdAt)}`,
+    };
+  });
 
-  const quickLinks = isAdmin
-    ? [
-        { label: "账号与荣誉", href: "/admin/users", detail: "查看玩家列表、荣誉值与归档角色恢复入口" },
-        { label: "商店管理", href: "/admin/shops", detail: "维护补给条目、价格与启用状态" },
-        { label: "密码池", href: "/admin/passwords", detail: "刷新一次性密码池并核对当前生效状态" },
-        { label: "审计日志", href: "/admin/audit", detail: "快速回看关键数值调整和商店变更记录" },
-      ]
-    : [
-        { label: "角色卡册", href: "/characters", detail: "切换当前角色、新增角色或归档已有角色" },
-        { label: "冒险者集市", href: "/market", detail: "查看寄售、撤销自己的物品或直接入手" },
-        { label: "公会补给处", href: "/shops/guild", detail: "使用当前角色金币采购公共补给" },
-        { label: "荣誉商店", href: "/shops/honor", detail: "使用账号荣誉值为当前角色购入物品" },
-      ];
+  // ── Market transactions panel items ──
+  const marketItems: PanelItem[] = recentMarketSales.map((listing) => ({
+    id: listing.id,
+    eyebrow: "集市成交",
+    title: listing.inventoryItem.name,
+    subtitle: `${listing.sellerCharacter.name} → ${listing.buyerCharacter?.name ?? "—"}`,
+    primary: `${formatNumber(listing.price)} 金币`,
+    secondary: `数量 ${formatNumber(listing.inventoryItem.quantity)}`,
+    meta: listing.soldAt ? `成交于 ${formatDateLabel(listing.soldAt)}` : undefined,
+    tone: "success" as const,
+  }));
+
+  // ── Audit log panel items ──
+  const auditItems: PanelItem[] = recentAuditLogs.map((log) => ({
+    id: log.id,
+    eyebrow: formatAuditAction(log.action),
+    title: log.targetCharacter?.name ?? log.targetUser?.displayName ?? log.actorUser?.displayName ?? "系统",
+    subtitle: log.note ?? undefined,
+    primary: formatAuditValue(log.afterValue) ? `→ ${formatAuditValue(log.afterValue)}` : undefined,
+    secondary: formatAuditValue(log.beforeValue) ? `原值 ${formatAuditValue(log.beforeValue)}` : undefined,
+    meta: `${formatDateLabel(log.createdAt)}${log.actorUser ? ` · ${log.actorUser.displayName}` : ""}`,
+  }));
 
   return (
     <AppShell
@@ -207,120 +223,106 @@ export default async function DashboardPage() {
       }
       badge={isAdmin ? "管理员总览" : "冒险总览"}
     >
-      <section className="grid gap-6 md:grid-cols-2 xl:grid-cols-4">
+      {/* ── Stats row ── */}
+      <section className="grid gap-4 md:grid-cols-2 xl:grid-cols-4 shrink-0">
         {overviewCards.map((card) => (
           <SummaryCard key={card.title} title={card.title} value={card.value} detail={card.detail} />
         ))}
       </section>
 
-      <section className="mt-6 grid gap-6 xl:grid-cols-[1.02fr_0.98fr]">
-        <article className="panel rounded-[28px] p-6">
-          <div className="mb-4 flex items-start justify-between gap-4">
-            <div>
-              <h3 className="section-title text-2xl font-semibold">玩家预览</h3>
-              <p className="mt-2 text-sm leading-6 text-[var(--muted)]">
-                {isAdmin
-                  ? "展示最近登记的玩家账号，便于快速核对荣誉值与活跃角色规模。"
-                  : "展示当前冒险者账号的荣誉与角色概况，入入冒险者集市前可先在此确认当前状态。"}
-              </p>
-            </div>
-            {isAdmin ? (
-              <Link href="/admin/users" className="focus-ring btn-secondary shrink-0">
-                查看全部账号
+      {/* ── Kanban panels ── */}
+      <section className="mt-5 grid gap-5 xl:grid-cols-4 flex-1 min-h-0" style={{ height: "clamp(340px, calc(100vh - 420px), 560px)" }}>
+        {/* Player preview */}
+        <PaginatedPanel
+          title="冒险者档案"
+          description={isAdmin ? "最近登记的玩家账号" : "当前账号基础状态"}
+          items={playerItems}
+          emptyText="暂无玩家数据"
+          headerAction={
+            isAdmin ? (
+              <Link href="/admin/users" className="focus-ring btn-secondary btn-compact">
+                全部账号
               </Link>
-            ) : null}
-          </div>
+            ) : null
+          }
+        />
 
-          <div className="grid gap-3">
-            {playerPreviewItems.map((item) => (
-              <div
-                key={item.id}
-                className="subtle-card rounded-[24px] px-4 py-4"
-              >
-                <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-                  <div className="min-w-0">
-                    <p className="text-xs font-semibold uppercase tracking-[0.18em] text-[var(--accent-strong)]">
-                      {item.eyebrow}
-                    </p>
-                    <p className="mt-2 text-lg font-semibold text-[var(--color-ink-900)]">{item.title}</p>
-                    <p className="mt-1 text-sm text-[var(--muted)]">{item.meta}</p>
-                  </div>
-
-                  <div className="grid gap-2 sm:text-right">
-                    <p className="text-sm font-semibold text-[var(--color-ink-900)]">{item.primary}</p>
-                    <p className="text-sm text-[var(--muted)]">{item.secondary}</p>
-                  </div>
-                </div>
-              </div>
-            ))}
-          </div>
-        </article>
-
-        <article className="panel rounded-[28px] p-6">
-          <div className="mb-4 flex items-start justify-between gap-4">
-            <div>
-              <h3 className="section-title text-2xl font-semibold">角色预览</h3>
-              <p className="mt-2 text-sm leading-6 text-[var(--muted)]">
-                {isAdmin
-                  ? "展示最近进入账簿的活跃角色，帮助管理员快速感知当前角色面状态。"
-                  : "当前账号下的角色会优先把已选中角色置顶，方便先看关键数值。"}
-              </p>
-            </div>
-            <Link href="/characters" className="focus-ring btn-secondary shrink-0">
-              打开角色卡册
+        {/* Character preview */}
+        <PaginatedPanel
+          title="角色状态"
+          description={isAdmin ? "最近进入账簿的活跃角色" : "当前角色金币与声望一览"}
+          items={characterItems}
+          emptyText="暂无角色数据"
+          headerAction={
+            <Link href="/characters" className="focus-ring btn-secondary btn-compact">
+              角色卡册
             </Link>
-          </div>
+          }
+        />
 
-          <div className="grid gap-3">
-            {characterPreviewItems.map((item) => (
-              <div
-                key={item.id}
-                className="rounded-[24px] border border-[var(--border-soft)] bg-[rgba(255,250,241,0.86)] px-4 py-4"
-              >
-                <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-                  <div className="min-w-0">
-                    <p className="text-xs font-semibold uppercase tracking-[0.18em] text-[var(--accent-strong)]">
-                      {item.eyebrow}
-                    </p>
-                    <p className="mt-2 text-lg font-semibold text-[var(--color-ink-900)]">{item.title}</p>
-                    <p className="mt-1 text-sm text-[var(--muted)]">{item.meta}</p>
-                  </div>
+        {/* Market transactions */}
+        <PaginatedPanel
+          title="集市成交记录"
+          description={isAdmin ? "全服最近成交的寄售单" : "当前角色参与的集市成交"}
+          items={marketItems}
+          emptyText="暂无成交记录"
+          headerAction={
+            <Link href="/market" className="focus-ring btn-secondary btn-compact">
+              冒险者集市
+            </Link>
+          }
+        />
 
-                  <div className="grid gap-2 sm:text-right">
-                    <p className="text-sm font-semibold text-[var(--color-ink-900)]">{item.primary}</p>
-                    <p className="text-sm text-[var(--muted)]">{item.secondary}</p>
-                  </div>
-                </div>
-              </div>
-            ))}
-          </div>
-        </article>
+        {/* Audit logs */}
+        <PaginatedPanel
+          title="最近审计日志"
+          description={isAdmin ? "全服最新操作记录" : "与当前账号相关的操作记录"}
+          items={auditItems}
+          emptyText="暂无审计记录"
+          headerAction={
+            isAdmin ? (
+              <Link href="/admin/audit" className="focus-ring btn-secondary btn-compact">
+                完整日志
+              </Link>
+            ) : null
+          }
+        />
       </section>
 
-      <section className="mt-6 panel rounded-[28px] p-6">
-        <div className="mb-4 flex flex-col gap-2 sm:flex-row sm:items-end sm:justify-between">
+      {/* ── Quick links ── */}
+      <section className="mt-5 panel rounded-[28px] p-5 shrink-0">
+        <div className="flex items-center justify-between gap-4 mb-3">
           <div>
-            <h3 className="section-title text-2xl font-semibold">常用功能入口</h3>
-            <p className="mt-2 text-sm leading-6 text-[var(--muted)]">
+            <h3 className="section-title text-lg font-semibold text-[var(--color-ink-900)]">常用功能入口</h3>
+            <p className="mt-0.5 text-xs leading-5 text-[var(--muted)]">
               {isAdmin
                 ? "快速跳转至管理功能。具体的账号、荣誉与商店管理请进入各层级页面操作。"
                 : "展开当天的冒险之旅。小队装备、交流货物或进入公会补给处采购，是你最常用的几个功能入口。"}
             </p>
           </div>
-          <span className="rounded-full border border-[var(--border-soft)] bg-[rgba(255,250,241,0.82)] px-3 py-1 text-xs font-semibold uppercase tracking-[0.2em] text-[var(--accent-strong)]">
-            {quickLinks.length} 个常用入口
-          </span>
         </div>
-
-        <div className="grid gap-3 lg:grid-cols-2">
-          {quickLinks.map((item) => (
+        <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
+          {(isAdmin
+            ? [
+                { label: "账号与荣誉", href: "/admin/users", detail: "玩家列表、荣誉值与角色恢复" },
+                { label: "商店管理", href: "/admin/shops", detail: "维护补给条目、价格与启用状态" },
+                { label: "密码池", href: "/admin/passwords", detail: "刷新一次性密码池并核对状态" },
+                { label: "审计日志", href: "/admin/audit", detail: "回看关键数值与商店变更记录" },
+              ]
+            : [
+                { label: "角色卡册", href: "/characters", detail: "切换角色、新增或归档已有角色" },
+                { label: "冒险者集市", href: "/market", detail: "查看寄售、撤销物品或直接入手" },
+                { label: "公会补给处", href: "/shops/guild", detail: "使用金币采购公共补给" },
+                { label: "荣誉商店", href: "/shops/honor", detail: "使用荣誉值为当前角色购入物品" },
+              ]
+          ).map((item) => (
             <Link
               key={item.href}
               href={item.href}
-              className="focus-ring subtle-card rounded-2xl px-4 py-4 transition hover:border-[var(--border-strong)] hover:bg-[rgba(255,252,246,0.98)]"
+              className="focus-ring subtle-card rounded-2xl px-4 py-3 transition hover:border-[var(--border-strong)] hover:bg-[rgba(255,252,246,0.98)]"
             >
               <p className="text-sm font-semibold text-[var(--color-ink-900)]">{item.label}</p>
-              <p className="mt-1 text-sm leading-6 text-[var(--muted)]">{item.detail}</p>
+              <p className="mt-1 text-xs leading-5 text-[var(--muted)]">{item.detail}</p>
             </Link>
           ))}
         </div>
