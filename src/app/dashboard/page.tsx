@@ -4,6 +4,7 @@ import { SummaryCard } from "@/components/summary-card";
 import { PaginatedPanel, type PanelItem } from "@/components/paginated-panel";
 import { requirePlayerCharacter } from "@/lib/auth-helpers";
 import { prisma } from "@/lib/prisma";
+import { getTierByHonor } from "@/lib/honor-tiers";
 
 function formatNumber(value: number) {
   return new Intl.NumberFormat("zh-CN").format(value);
@@ -134,15 +135,17 @@ export default async function DashboardPage() {
     }),
   ]);
 
+  const currentTier = getTierByHonor(user.honor);
+
   const overviewCards = isAdmin
     ? [
         { title: "注册玩家数", value: formatNumber(registeredPlayers), detail: "当前启用的活跃玩家账号" },
         { title: "活跃角色数", value: formatNumber(activeCharacterCount), detail: "正在运行于主流程的角色" },
         { title: "归档角色数", value: formatNumber(archivedCharacterCount), detail: "保留数据，管理员可恢复" },
-        { title: "管理员荣誉", value: formatNumber(user.honor), detail: "当前管理员账号荣誉值" },
+        { title: "管理员荣誉", value: `${formatNumber(user.honor)}（${currentTier.name}）`, detail: "点击查看荣誉等级权限", href: "/honor-tiers" },
       ]
     : [
-        { title: "账号荣誉值", value: formatNumber(user.honor), detail: "仅管理员可发放或扣减" },
+        { title: "账号荣誉值", value: `${formatNumber(user.honor)}（${currentTier.name}）`, detail: "点击查看荣誉等级权限", href: "/honor-tiers" },
         { title: "当前角色", value: currentCharacter?.name ?? "未选择", detail: "影响补给与集市交易" },
         { title: "我的角色数", value: formatNumber(characters.length), detail: "活跃角色，不含已归档" },
         { title: "登记玩家数", value: formatNumber(registeredPlayers), detail: "当前西征账簿活跃规模" },
