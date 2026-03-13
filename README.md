@@ -50,4 +50,13 @@ npm run dev
 2. Ubuntu 22.04 服务器拉取代码
 3. 通过 Docker 构建和运行
 
-当前仓库已包含 `Dockerfile`，但尚未在本机验证容器构建。
+当前仓库已包含 `Dockerfile` 与 `docker-compose.yml`。
+推荐后续统一使用：
+
+```bash
+git pull --ff-only
+docker compose up -d --build
+```
+
+完整步骤、迁移说明与配置变动检查清单见：
+- `doc/服务器部署与版本更新指南.md`

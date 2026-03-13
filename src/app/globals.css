@@ -37,7 +37,7 @@ html {
 body {
   background: var(--background);
   color: var(--foreground);
-  font-family: var(--font-body), sans-serif;
+  font-family: var(--font-body), serif;
   min-height: 100vh;
 }
 
@@ -105,6 +105,7 @@ textarea {
   font-weight: 700;
   letter-spacing: 0.24em;
   text-transform: uppercase;
+  white-space: nowrap;
 }
 
 .metric-card {
@@ -125,7 +126,7 @@ textarea {
 .metric-value {
   margin-top: 0.85rem;
   color: var(--color-ink-900);
-  font-family: var(--font-heading), serif;
+  font-family: var(--font-body), serif;
   font-size: clamp(1.8rem, 2vw, 2.3rem);
   font-weight: 600;
   line-height: 1;
@@ -205,6 +206,7 @@ textarea {
   font-weight: 700;
   letter-spacing: 0.16em;
   text-transform: uppercase;
+  white-space: nowrap;
 }
 
 .btn-primary,
@@ -216,6 +218,8 @@ textarea {
   border-radius: 999px;
   font-size: 0.92rem;
   font-weight: 700;
+  white-space: nowrap;
+  min-width: max-content;
   transition:
     background-color 0.16s ease,
     border-color 0.16s ease,
@@ -322,6 +326,8 @@ textarea {
   padding: 14px 18px;
   text-align: left;
   vertical-align: middle;
+  white-space: nowrap;
+  word-break: keep-all;
 }
 
 .table-shell tbody tr:nth-child(even) td {
@@ -395,6 +401,7 @@ textarea {
   font-weight: 700;
   letter-spacing: 0.08em;
   text-transform: uppercase;
+  white-space: nowrap;
 }
 
 @media (max-width: 960px) {

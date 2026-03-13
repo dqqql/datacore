@@ -1,5 +1,5 @@
 import type { Metadata } from "next";
-import { Cormorant_Garamond, Noto_Sans_SC } from "next/font/google";
+import { Cormorant_Garamond, Noto_Serif_SC } from "next/font/google";
 import "./globals.css";
 
 const headingFont = Cormorant_Garamond({
@@ -8,15 +8,15 @@ const headingFont = Cormorant_Garamond({
   weight: ["500", "600", "700"],
 });
 
-const bodyFont = Noto_Sans_SC({
+const bodyFont = Noto_Serif_SC({
   variable: "--font-body",
   subsets: ["latin"],
   weight: ["400", "500", "700"],
 });
 
 export const metadata: Metadata = {
-  title: "西征模式数据管理中心",
-  description: "用于西征模式世界的角色、经济、背包与交易管理中枢",
+  title: "西征数据中心",
+  description: "用于西征模式世界的角色、经济、行囊与交易管理中枢",
 };
 
 export default function RootLayout({

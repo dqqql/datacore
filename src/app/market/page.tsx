@@ -14,14 +14,14 @@ type MarketPageProps = {
 };
 
 const marketMessages = {
-  invalidCancel: "下架失败，请刷新页面后重试。",
-  cancelUnavailable: "该挂单当前无法下架。",
-  invalidPurchase: "购买失败，请检查当前角色与挂单状态后重试。",
-  purchaseUnavailable: "该挂单当前不可购买，可能已售出或被下架。",
-  selfPurchase: "不能购买自己上架的物品。",
-  insufficientGold: "当前角色金币不足，无法完成此次购买。",
-  cancelCompleted: "挂单已下架，物品已返回卖方角色背包。",
-  purchaseCompleted: "购买成功，物品已转入当前角色背包。",
+  invalidCancel: "撤销失败，请刷新页面后重试。",
+  cancelUnavailable: "该寄售当前无法撤销。",
+  invalidPurchase: "购买失败，请检查当前角色与寄售单状态后重试。",
+  purchaseUnavailable: "该寄售单当前不可入手，可能已售出或被撤销。",
+  selfPurchase: "不能入手自己委托的物品。",
+  insufficientGold: "当前角色金币不足，无法完成此次入手。",
+  cancelCompleted: "寄售已撤销，物品已返回卖方角色行囊。",
+  purchaseCompleted: "交易达成，物品已转入当前角色行囊。",
 } as const;
 
 function formatPrice(value: number) {
@@ -67,8 +67,8 @@ export default async function MarketPage({ searchParams }: MarketPageProps) {
 
   return (
     <AppShell
-      title="玩家交易市场"
-      description="玩家交易已接入真实挂单与自动成交。私人物品仅支持整单上架与整单购买，不开放议价或拍卖。"
+      title="冒险者集市"
+      description="冒险者集市已接入真实挂单与自动成交。私设物品仅支持整单寄售与整单入手，不开放议价或拍卖。"
       badge="市场"
     >
       <section className="grid gap-6">
@@ -76,11 +76,11 @@ export default async function MarketPage({ searchParams }: MarketPageProps) {
           <div className="flex flex-col gap-6 xl:flex-row xl:items-start xl:justify-between">
             <div className="max-w-3xl">
               <h3 className="section-title text-3xl font-semibold text-[var(--color-ink-900)]">
-                自动成交的私人物品市场
+                自动成交的冒险者集市
               </h3>
               <p className="mt-3 text-sm leading-7 text-[var(--muted)]">
-                上架价格取物品当前单价。购买完成后，系统会自动扣除买方角色金币、
-                为卖方角色入账，并将物品转移至当前角色背包。
+                寄售价格取物品当前单价。入手完成后，系统会自动扣除买方角色金币、
+                为卖方角色入账，并将物品转移至当前角色行囊。
               </p>
             </div>
 
@@ -106,7 +106,7 @@ export default async function MarketPage({ searchParams }: MarketPageProps) {
                   交易规则
                 </p>
                 <p className="mt-1 text-sm leading-6 text-[var(--color-ink-900)]">
-                  仅私人物品可在市场上架。价格不可在线修改，若录入有误，请先下架后返回角色页修正并重新上架。
+                  仅私设物品可在集市寄售。价格不可在线修改，若录入有误，请先撤销后返回角色卡册修正并重新委托寄售。
                 </p>
               </div>
             </div>
@@ -128,13 +128,13 @@ export default async function MarketPage({ searchParams }: MarketPageProps) {
         <article className="panel rounded-[28px] p-6">
           <div className="mb-4 flex flex-col gap-2 sm:flex-row sm:items-end sm:justify-between">
             <div>
-              <h3 className="section-title text-2xl font-semibold">当前在售挂单</h3>
+              <h3 className="section-title text-2xl font-semibold">集市目前在售</h3>
               <p className="mt-2 text-sm leading-6 text-[var(--muted)]">
-                所有交易均按当前挂单整单成交，不拆单，不议价。
+                所有交易均按当前寄售单整单成交，不拆单，不议价。
               </p>
             </div>
             <span className="rounded-full border border-[var(--border-soft)] bg-[rgba(255,250,241,0.82)] px-3 py-1 text-xs font-semibold uppercase tracking-[0.2em] text-[var(--accent-strong)]">
-              {listings.length} 条挂单
+              {listings.length} 条寄售
             </span>
           </div>
 
@@ -142,7 +142,7 @@ export default async function MarketPage({ searchParams }: MarketPageProps) {
             <table>
               <thead>
                 <tr>
-                  <th>挂单物品</th>
+                  <th>寄售物品</th>
                   <th>卖方角色</th>
                   <th>价格</th>
                   <th>状态</th>
@@ -168,7 +168,7 @@ export default async function MarketPage({ searchParams }: MarketPageProps) {
                         </td>
                         <td>{listing.sellerCharacter.name}</td>
                         <td className="numeric">{formatPrice(listing.price)}</td>
-                        <td>{isOwnListing ? "我的挂单" : "可购买"}</td>
+                        <td>{isOwnListing ? "我的寄售" : "可入手"}</td>
                         <td>
                           {isOwnListing ? (
                             <form action={cancelMarketListingAction}>
@@ -202,7 +202,7 @@ export default async function MarketPage({ searchParams }: MarketPageProps) {
                 ) : (
                   <tr>
                     <td colSpan={5} className="text-sm leading-6 text-[var(--muted)]">
-                      当前暂无在售挂单。你可以先在角色页录入私人物品并上架，市场数据会在此实时展示。
+                      集市目前无人寄售。你可以先在角色卡册存放战利品并委托集市寄售，数据会在此实时展示。
                     </td>
                   </tr>
                 )}

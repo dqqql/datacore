@@ -16,7 +16,6 @@ COPY --from=deps /app/node_modules ./node_modules
 COPY . .
 RUN mkdir -p /app/prisma/sqlite
 RUN npx prisma generate --schema=./prisma/schema.prisma
-RUN npx prisma db push --schema=./prisma/schema.prisma
 RUN npm run build
 
 FROM base AS runner
@@ -34,4 +33,4 @@ COPY --from=builder /app/prisma ./prisma
 
 EXPOSE 3000
 
-CMD ["sh", "-c", "mkdir -p /app/prisma/sqlite && ./node_modules/.bin/prisma db push --schema=/app/prisma/schema.prisma && node server.js"]
+CMD ["sh", "-c", "mkdir -p /app/prisma/sqlite /app/secrets && ./node_modules/.bin/prisma db push --schema=/app/prisma/schema.prisma && node server.js"]

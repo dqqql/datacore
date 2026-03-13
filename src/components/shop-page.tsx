@@ -88,7 +88,7 @@ export function ShopPage({
                 交易规则
               </p>
               <p className="mt-1 text-sm leading-6 text-[var(--color-ink-900)]">
-                购买将以当前角色为归属对象，公共物品进入背包后仅可按现行售价的半价卖回系统商店。
+                购入将以当前角色为归属对象，规则书物品进入行囊后仅可按现行售价的半价典当给公会。
               </p>
             </div>
           </div>
@@ -170,17 +170,17 @@ export function ShopPage({
                           disabled={purchaseDisabled}
                           className="focus-ring btn-primary btn-compact disabled:bg-[var(--muted)]"
                         >
-                          购买
+                          购入
                         </button>
                       </form>
                     </td>
-                    <td className="text-sm leading-6 text-[var(--muted)]">购入后将直接写入当前角色背包</td>
+                    <td className="text-sm leading-6 text-[var(--muted)]">购入后将直接写入当前角色行囊</td>
                   </tr>
                 ))
               ) : (
                 <tr>
                   <td colSpan={5} className="text-sm leading-6 text-[var(--muted)]">
-                    当前商店尚无可售条目。基础条目会在首次访问时自动初始化。
+                    补给处暂无现货。基础条目会在首次访问时自动初始化。
                   </td>
                 </tr>
               )}
@@ -190,7 +190,7 @@ export function ShopPage({
 
         {purchaseDisabled ? (
           <p className="mt-4 text-sm leading-6 text-[var(--muted)]">
-            当前没有可用角色，因此暂时只能浏览商店内容。创建或切换角色后即可执行购买。
+            当前没有可用角色，因此暂时只能浏览补给处内容。创建或切换角色后即可执行购入。
           </p>
         ) : null}
       </article>

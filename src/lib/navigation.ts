@@ -2,15 +2,15 @@ export const navigationGroups = [
   {
     title: "玩家功能",
     items: [
-      { label: "总览", href: "/", badge: "首页" },
       { label: "登录", href: "/login", badge: "账号" },
       { label: "控制台", href: "/dashboard", badge: "入口" },
-      { label: "角色列表", href: "/characters", badge: "角色" },
-      { label: "玩家交易", href: "/market", badge: "市场" },
+      { label: "荣誉等级", href: "/honor-tiers", badge: "等级" },
+      { label: "角色卡册", href: "/characters", badge: "角色" },
+      { label: "冒险者集市", href: "/market", badge: "市场" },
     ],
   },
   {
-    title: "公共商店",
+    title: "公会补给处",
     items: [
       { label: "公会商店", href: "/shops/guild", badge: "金币" },
       { label: "荣誉商店", href: "/shops/honor", badge: "荣誉" },

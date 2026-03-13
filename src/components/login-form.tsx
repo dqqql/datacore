@@ -47,7 +47,7 @@ export function LoginForm() {
         disabled={isPending}
         className="focus-ring btn-primary w-full"
       >
-        {isPending ? "正在验证身份..." : "进入系统"}
+        {isPending ? "正在验证身份..." : "登记并进入公会"}
       </button>
     </form>
   );

@@ -39,8 +39,8 @@ export default async function CharactersPage({ searchParams }: CharactersPagePro
 
   return (
     <AppShell
-      title="角色管理"
-      description="这里展示当前账号下的全部活跃角色。你可以新增、切换或归档角色，商店与交易流程将围绕当前角色运行。"
+      title="角色卡册"
+      description="这里展示当前账号下的全部活跃角色。你可以新增、切换或归档角色，补给处与集市流程将围绕当前角色运行。"
       badge="角色"
     >
       <section className="grid gap-6 xl:grid-cols-[1.15fr_0.85fr]">
@@ -52,7 +52,7 @@ export default async function CharactersPage({ searchParams }: CharactersPagePro
                 当前列表仅展示活跃角色。归档角色不会被删除，管理员可在后台恢复。
               </p>
             </div>
-            <span className="rounded-full border border-[var(--border-soft)] bg-[rgba(127,92,47,0.08)] px-3 py-1 text-xs font-semibold uppercase tracking-[0.22em] text-[var(--accent-strong)]">
+            <span className="shrink-0 whitespace-nowrap rounded-full border border-[var(--border-soft)] bg-[rgba(127,92,47,0.08)] px-3 py-1 text-xs font-semibold uppercase tracking-[0.22em] text-[var(--accent-strong)]">
               {characters.length} 个角色
             </span>
           </div>
@@ -97,7 +97,7 @@ export default async function CharactersPage({ searchParams }: CharactersPagePro
                     <td className="numeric">{character.reputation}</td>
                     <td>{character.status === "ACTIVE" ? "活跃" : character.status}</td>
                     <td>
-                      <div className="flex flex-wrap gap-2">
+                      <div className="flex flex-nowrap gap-2 items-center">
                         <form action={selectCurrentCharacterAction}>
                           <input type="hidden" name="characterId" value={character.id} />
                           <button
@@ -134,7 +134,7 @@ export default async function CharactersPage({ searchParams }: CharactersPagePro
         <article className="panel rounded-[28px] p-6">
           <h3 className="section-title text-2xl font-semibold">新增角色</h3>
           <p className="mt-2 text-sm leading-6 text-[var(--muted)]">
-            新建角色后会自动切换为当前角色，便于立即进入金币、声望与背包管理。
+            新建角色后会自动切换为当前角色，便于立即进入金币、声望与行囊管理。
           </p>
 
           <form action={createCharacterAction} className="mt-5 space-y-4">

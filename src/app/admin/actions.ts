@@ -182,17 +182,11 @@ export async function adjustUserHonorAction(formData: FormData) {
   redirect(buildRedirect("/admin/users", "honorSuccess", "honor-adjusted"));
 }
 
-export async function refreshPasswordPoolAction(formData: FormData) {
+export async function refreshPasswordPoolAction() {
   const session = await requireAdminSession();
-  const parsed = refreshPasswordPoolSchema.safeParse({
-    count: formData.get("count"),
-  });
 
-  if (!parsed.success) {
-    redirect(buildRedirect("/admin/passwords", "otpError", "invalid-count"));
-  }
-
-  const codes = generatePasswordCodes(parsed.data.count);
+  const count = 10;
+  const codes = generatePasswordCodes(count);
 
   await prisma.$transaction(async (tx) => {
     await tx.oneTimePasswordPool.updateMany({
@@ -221,10 +215,8 @@ export async function refreshPasswordPoolAction(formData: FormData) {
         action: "SHOP_PASSWORD_POOL_REFRESHED",
         entityType: "OneTimePasswordPool",
         entityId: pool.id,
-        afterValue: JSON.stringify({
-          count: parsed.data.count,
-        }),
-        note: `刷新一次性密码池，共生成 ${parsed.data.count} 组密码`,
+        afterValue: JSON.stringify({ count }),
+        note: `刷新一次性密码池，共生成 ${count} 组密码`,
       },
     });
   });

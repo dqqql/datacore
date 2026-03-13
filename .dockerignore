@@ -3,7 +3,10 @@
 .next
 node_modules
 npm-debug.log*
+.env
+secrets
 doc
 prompts
 app-init-tmp
 prisma/dev.db
+prisma/sqlite

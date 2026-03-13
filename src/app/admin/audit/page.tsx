@@ -8,6 +8,7 @@ function formatAuditAction(action: string) {
     CHARACTER_REPUTATION_UPDATED: "声望调整",
     USER_HONOR_UPDATED: "荣誉值调整",
     PRIVATE_ITEM_CREATED: "录入私人物品",
+    PRIVATE_ITEM_DELETED: "删除私设物品",
     MARKET_LISTED: "市场上架",
     MARKET_CANCELLED: "市场下架",
     MARKET_PURCHASED: "市场成交",
@@ -82,8 +83,6 @@ export default async function AdminAuditPage() {
                   <th>动作</th>
                   <th>操作人</th>
                   <th>目标对象</th>
-                  <th>调整前</th>
-                  <th>调整后</th>
                   <th>说明</th>
                 </tr>
               </thead>
@@ -97,14 +96,12 @@ export default async function AdminAuditPage() {
                       <td>{formatAuditAction(log.action)}</td>
                       <td>{log.actorUser?.displayName ?? "-"}</td>
                       <td>{log.targetCharacter?.name ?? log.targetUser?.displayName ?? "-"}</td>
-                      <td>{log.beforeValue ?? "-"}</td>
-                      <td>{log.afterValue ?? "-"}</td>
                       <td>{log.note ?? "-"}</td>
                     </tr>
                   ))
                 ) : (
                   <tr>
-                    <td colSpan={7} className="px-6 py-10 text-sm leading-6 text-[var(--muted)]">
+                    <td colSpan={5} className="px-6 py-10 text-sm leading-6 text-[var(--muted)]">
                       当前尚无审计记录。玩家操作与后台维护动作都会自动写入这里。
                     </td>
                   </tr>
