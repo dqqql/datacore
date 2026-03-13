@@ -10,6 +10,7 @@ import {
   createPrivateItemSchema,
   createCharacterSchema,
   createUserSchema,
+  deletePrivateItemSchema,
   selectCharacterSchema,
   updateCharacterEconomySchema,
 } from "@/lib/schemas";
@@ -222,6 +223,24 @@ export async function createPrivateItemAction(formData: FormData) {
   }
 
   await prisma.$transaction(async (tx) => {
+    const duplicateItems = await tx.inventoryItem.findMany({
+      where: {
+        characterId: character.id,
+      },
+      select: {
+        name: true,
+      },
+    });
+
+    const normalizedName = parsed.data.name.toLocaleLowerCase("zh-CN");
+    const hasDuplicateName = duplicateItems.some(
+      (item) => item.name.toLocaleLowerCase("zh-CN") === normalizedName,
+    );
+
+    if (hasDuplicateName) {
+      redirect(buildCharacterDetailRedirect(character.id, "inventoryError", "duplicate-private-item-name"));
+    }
+
     const createdItem = await tx.inventoryItem.create({
       data: {
         characterId: character.id,
@@ -253,7 +272,78 @@ export async function createPrivateItemAction(formData: FormData) {
 
   revalidatePath("/dashboard");
   revalidatePath(`/characters/${character.id}`);
+  revalidatePath("/admin/audit");
   redirect(buildCharacterDetailRedirect(character.id, "inventorySuccess", "private-item-created"));
+}
+
+export async function deletePrivateItemAction(formData: FormData) {
+  const session = await requireSession();
+  const fallbackCharacterId = String(formData.get("characterId") ?? "").trim();
+  const parsed = deletePrivateItemSchema.safeParse({
+    characterId: formData.get("characterId"),
+    inventoryItemId: formData.get("inventoryItemId"),
+  });
+
+  if (!parsed.success) {
+    if (fallbackCharacterId) {
+      redirect(buildCharacterDetailRedirect(fallbackCharacterId, "inventoryError", "invalid-private-item-delete"));
+    }
+
+    redirect("/characters?error=invalid-private-item-delete");
+  }
+
+  const inventoryItem = await prisma.inventoryItem.findFirst({
+    where: {
+      id: parsed.data.inventoryItemId,
+      characterId: parsed.data.characterId,
+      ownershipType: "PRIVATE",
+      character: {
+        userId: session.user.id,
+        status: "ACTIVE",
+      },
+    },
+  });
+
+  if (!inventoryItem || inventoryItem.isListed) {
+    redirect(buildCharacterDetailRedirect(parsed.data.characterId, "inventoryError", "private-item-delete-unavailable"));
+  }
+
+  await prisma.$transaction(async (tx) => {
+    const deletedItem = await tx.inventoryItem.deleteMany({
+      where: {
+        id: inventoryItem.id,
+        characterId: parsed.data.characterId,
+        ownershipType: "PRIVATE",
+        isListed: false,
+      },
+    });
+
+    if (deletedItem.count !== 1) {
+      redirect(buildCharacterDetailRedirect(parsed.data.characterId, "inventoryError", "private-item-delete-unavailable"));
+    }
+
+    await tx.auditLog.create({
+      data: {
+        actorUserId: session.user.id,
+        targetUserId: session.user.id,
+        targetCharacterId: parsed.data.characterId,
+        action: "PRIVATE_ITEM_DELETED",
+        entityType: "InventoryItem",
+        entityId: inventoryItem.id,
+        beforeValue: JSON.stringify({
+          name: inventoryItem.name,
+          quantity: inventoryItem.quantity,
+          unitPrice: inventoryItem.unitPrice,
+        }),
+        note: `删除私设物品：${inventoryItem.name}`,
+      },
+    });
+  });
+
+  revalidatePath("/dashboard");
+  revalidatePath(`/characters/${parsed.data.characterId}`);
+  revalidatePath("/admin/audit");
+  redirect(buildCharacterDetailRedirect(parsed.data.characterId, "inventorySuccess", "private-item-deleted"));
 }
 
 export async function archiveCharacterAction(formData: FormData) {

@@ -4,6 +4,7 @@ import { prisma } from "@/lib/prisma";
 import { requirePlayerCharacter } from "@/lib/auth-helpers";
 import {
   createPrivateItemAction,
+  deletePrivateItemAction,
   updateCharacterEconomyAction,
 } from "@/app/characters/actions";
 import {
@@ -11,6 +12,7 @@ import {
   createMarketListingAction,
 } from "@/app/market/actions";
 import { sellbackInventoryItemAction } from "@/app/shops/actions";
+import { ConfirmSubmitButton } from "@/components/confirm-submit-button";
 
 type CharacterDetailPageProps = {
   params: Promise<{
@@ -28,7 +30,11 @@ type CharacterDetailPageProps = {
 
 const inventoryMessages = {
   invalid: "存放失败，请检查名称、数量与单价后重试。",
+  duplicate: "该角色背包中已存在同名物品，请更换名称后再存入。",
+  deleteInvalid: "删除失败，请刷新页面后重试。",
+  deleteUnavailable: "该私设物品当前无法删除，请先确认它未在寄售中。",
   created: "战利品/私设物品已妥善存入当前角色行囊。",
+  deleted: "私设物品已从角色背包和数据库中删除。",
 } as const;
 
 const sellbackMessages = {
@@ -55,6 +61,7 @@ function formatAuditAction(action: string) {
     CHARACTER_GOLD_UPDATED: "金币调整",
     CHARACTER_REPUTATION_UPDATED: "声望调整",
     PRIVATE_ITEM_CREATED: "存放战利品",
+    PRIVATE_ITEM_DELETED: "删除私设物品",
     MARKET_LISTED: "集市寄售",
     MARKET_CANCELLED: "撤销寄售",
     MARKET_PURCHASED: "集市入手",
@@ -104,9 +111,21 @@ export default async function CharacterDetailPage({ params, searchParams }: Char
   }
 
   const inventoryErrorMessage =
-    query.inventoryError === "invalid-private-item" ? inventoryMessages.invalid : null;
+    query.inventoryError === "invalid-private-item"
+      ? inventoryMessages.invalid
+      : query.inventoryError === "duplicate-private-item-name"
+        ? inventoryMessages.duplicate
+        : query.inventoryError === "invalid-private-item-delete"
+          ? inventoryMessages.deleteInvalid
+          : query.inventoryError === "private-item-delete-unavailable"
+            ? inventoryMessages.deleteUnavailable
+            : null;
   const inventorySuccessMessage =
-    query.inventorySuccess === "private-item-created" ? inventoryMessages.created : null;
+    query.inventorySuccess === "private-item-created"
+      ? inventoryMessages.created
+      : query.inventorySuccess === "private-item-deleted"
+        ? inventoryMessages.deleted
+        : null;
   const sellbackErrorMessage =
     query.sellbackError === "invalid-sellback"
       ? sellbackMessages.invalid
@@ -272,19 +291,28 @@ export default async function CharacterDetailPage({ params, searchParams }: Char
                                 </button>
                               </form>
                             ) : (
-                              <form
-                                action={createMarketListingAction}
-                                className="flex flex-col gap-2 sm:flex-row sm:items-center"
-                              >
-                                <input type="hidden" name="characterId" value={character.id} />
-                                <input type="hidden" name="inventoryItemId" value={item.id} />
-                                <button
-                                  type="submit"
-                                  className="focus-ring btn-secondary btn-compact"
-                                >
-                                  委托寄售
-                                </button>
-                              </form>
+                              <div className="flex flex-col gap-2 sm:flex-row sm:items-center">
+                                <form action={createMarketListingAction}>
+                                  <input type="hidden" name="characterId" value={character.id} />
+                                  <input type="hidden" name="inventoryItemId" value={item.id} />
+                                  <button
+                                    type="submit"
+                                    className="focus-ring btn-secondary btn-compact"
+                                  >
+                                    委托寄售
+                                  </button>
+                                </form>
+                                <form action={deletePrivateItemAction}>
+                                  <input type="hidden" name="characterId" value={character.id} />
+                                  <input type="hidden" name="inventoryItemId" value={item.id} />
+                                  <ConfirmSubmitButton
+                                    className="focus-ring btn-secondary btn-compact"
+                                    confirmMessage={`确认删除“${item.name}”吗？删除后将无法恢复。`}
+                                  >
+                                    删除
+                                  </ConfirmSubmitButton>
+                                </form>
+                              </div>
                             )
                           ) : (
                             <span className="text-xs font-semibold uppercase tracking-[0.12em] text-[var(--color-ink-700)]">
