@@ -142,10 +142,10 @@ export default async function DashboardPage() {
         { title: "注册玩家数", value: formatNumber(registeredPlayers), detail: "当前启用的活跃玩家账号" },
         { title: "活跃角色数", value: formatNumber(activeCharacterCount), detail: "正在运行于主流程的角色" },
         { title: "归档角色数", value: formatNumber(archivedCharacterCount), detail: "保留数据，管理员可恢复" },
-        { title: "管理员荣誉", value: `${formatNumber(user.honor)}（${currentTier.name}）`, detail: "点击查看荣誉等级权限", href: "/honor-tiers" },
+        { title: "管理员荣誉", value: `${formatNumber(user.honor)}（${currentTier.name}）`, detail: "点击左侧导航查看荣誉等级" },
       ]
     : [
-        { title: "账号荣誉值", value: `${formatNumber(user.honor)}（${currentTier.name}）`, detail: "点击查看荣誉等级权限", href: "/honor-tiers" },
+        { title: "账号荣誉值", value: `${formatNumber(user.honor)}（${currentTier.name}）`, detail: "左侧导航可查荣誉等级详情" },
         { title: "当前角色", value: currentCharacter?.name ?? "未选择", detail: "影响补给与集市交易" },
         { title: "我的角色数", value: formatNumber(characters.length), detail: "活跃角色，不含已归档" },
         { title: "登记玩家数", value: formatNumber(registeredPlayers), detail: "当前西征账簿活跃规模" },
