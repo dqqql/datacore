@@ -309,7 +309,9 @@ export default async function CharacterDetailPage({ params, searchParams }: Char
                                   <input type="hidden" name="inventoryItemId" value={item.id} />
                                   <ConfirmSubmitButton
                                     className="focus-ring btn-secondary btn-compact"
+                                    confirmTitle="确认删除私设物品"
                                     confirmMessage={`确认删除“${item.name}”吗？删除后将无法恢复。`}
+                                    confirmTone="danger"
                                   >
                                     删除
                                   </ConfirmSubmitButton>
