@@ -6,7 +6,7 @@ import type { MouseEvent, ReactNode } from "react";
 type ConfirmSubmitButtonProps = {
   children: ReactNode;
   className?: string;
-  confirmMessage: string;
+  confirmMessage?: string;
 };
 
 export function ConfirmSubmitButton({
@@ -21,7 +21,7 @@ export function ConfirmSubmitButton({
       event.preventDefault();
       return;
     }
-    if (!window.confirm(confirmMessage)) {
+    if (confirmMessage && !window.confirm(confirmMessage)) {
       event.preventDefault();
     }
   }

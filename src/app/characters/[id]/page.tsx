@@ -480,7 +480,6 @@ export default async function CharacterDetailPage({ params, searchParams }: Char
                               />
                               <ConfirmSubmitButton
                                 className="focus-ring btn-secondary btn-compact"
-                                confirmMessage={`确认半价典当“${item.name}”吗？返还金额将直接写回对应货币。`}
                               >
                                 半价回收
                               </ConfirmSubmitButton>
