@@ -52,7 +52,7 @@ export default async function CharactersPage({ searchParams }: CharactersPagePro
                 当前列表仅展示活跃角色。归档角色不会被删除，管理员可在后台恢复。
               </p>
             </div>
-            <span className="rounded-full border border-[var(--border-soft)] bg-[rgba(127,92,47,0.08)] px-3 py-1 text-xs font-semibold uppercase tracking-[0.22em] text-[var(--accent-strong)]">
+            <span className="shrink-0 whitespace-nowrap rounded-full border border-[var(--border-soft)] bg-[rgba(127,92,47,0.08)] px-3 py-1 text-xs font-semibold uppercase tracking-[0.22em] text-[var(--accent-strong)]">
               {characters.length} 个角色
             </span>
           </div>
