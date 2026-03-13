@@ -200,7 +200,11 @@ export default async function DashboardPage() {
   return (
     <AppShell
       title={`总览 · ${user.displayName}`}
-      description="这里集中展示当前账号、玩家规模与角色动态的预览信息，方便在进入详细页面前先完成整体扫读。"
+      description={
+        isAdmin
+          ? "这里展示当前公会的整体运行情况，包括注册玩家规模、目前活跃角色数量与最近加入的冒险者动态，以便快速掌握全局账簿状况。"
+          : "欢迎回到西征账簿。这里展示你的荣誉、角色状态与常用入口，方便出发前先确认当前指标。"
+      }
       badge={isAdmin ? "管理员总览" : "冒险总览"}
     >
       <section className="grid gap-6 md:grid-cols-2 xl:grid-cols-4">
@@ -217,7 +221,7 @@ export default async function DashboardPage() {
               <p className="mt-2 text-sm leading-6 text-[var(--muted)]">
                 {isAdmin
                   ? "展示最近登记的玩家账号，便于快速核对荣誉值与活跃角色规模。"
-                  : "这里先给出当前账号的核心概况，进入详细页前可以快速确认状态。"}
+                  : "展示当前冒险者账号的荣誉与角色概况，入入冒险者集市前可先在此确认当前状态。"}
               </p>
             </div>
             {isAdmin ? (
@@ -296,9 +300,11 @@ export default async function DashboardPage() {
       <section className="mt-6 panel rounded-[28px] p-6">
         <div className="mb-4 flex flex-col gap-2 sm:flex-row sm:items-end sm:justify-between">
           <div>
-            <h3 className="section-title text-2xl font-semibold">下一步入口</h3>
+            <h3 className="section-title text-2xl font-semibold">常用功能入口</h3>
             <p className="mt-2 text-sm leading-6 text-[var(--muted)]">
-              总览只保留最常用的预览与跳转，详细操作继续放在各自页面，保证扫读效率优先。
+              {isAdmin
+                ? "快速跳转至管理功能。具体的账号、荣誉与商店管理请进入各层级页面操作。"
+                : "展开当天的冒险之旅。小队装备、交流货物或进入公会补给处采购，是你最常用的几个功能入口。"}
             </p>
           </div>
           <span className="rounded-full border border-[var(--border-soft)] bg-[rgba(255,250,241,0.82)] px-3 py-1 text-xs font-semibold uppercase tracking-[0.2em] text-[var(--accent-strong)]">
