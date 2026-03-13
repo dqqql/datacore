@@ -6,6 +6,8 @@ import { requirePlayerCharacter } from "@/lib/auth-helpers";
 import { prisma } from "@/lib/prisma";
 import { getTierByHonor } from "@/lib/honor-tiers";
 
+export const dynamic = "force-dynamic";
+
 function formatNumber(value: number) {
   return new Intl.NumberFormat("zh-CN").format(value);
 }

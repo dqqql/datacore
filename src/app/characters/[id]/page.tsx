@@ -14,6 +14,8 @@ import {
 import { sellbackInventoryItemAction } from "@/app/shops/actions";
 import { ConfirmSubmitButton } from "@/components/confirm-submit-button";
 
+export const dynamic = "force-dynamic";
+
 type CharacterDetailPageProps = {
   params: Promise<{
     id: string;
