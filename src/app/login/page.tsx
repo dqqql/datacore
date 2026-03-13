@@ -1,4 +1,3 @@
-import { redirect } from "next/navigation";
 import { auth } from "../../../auth";
 import { AppShell } from "@/components/app-shell";
 import { LoginForm } from "@/components/login-form";
@@ -52,11 +51,11 @@ export default async function LoginPage() {
                   当前身份：{session.user.name ?? session.user.username}
                 </h4>
                 <p className="mt-2 text-sm text-[var(--muted)]">
-                  你已经登记在册。你可以直接返回控制台，或是退出当前账号。
+                  你已经登记在册。你可以直接返回总览，或是退出当前账号。
                 </p>
                 <div className="mt-6 flex flex-col gap-3">
                   <Link href="/dashboard" className="focus-ring btn-primary w-full">
-                    返回控制台
+                    返回总览
                   </Link>
                   <LogoutButton />
                 </div>

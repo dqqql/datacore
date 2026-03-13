@@ -3,7 +3,7 @@ export const navigationGroups = [
     title: "玩家功能",
     items: [
       { label: "登录", href: "/login", badge: "账号" },
-      { label: "控制台", href: "/dashboard", badge: "入口" },
+      { label: "总览", href: "/dashboard", badge: "概览" },
       { label: "角色卡册", href: "/characters", badge: "角色" },
       { label: "冒险者集市", href: "/market", badge: "市场" },
     ],

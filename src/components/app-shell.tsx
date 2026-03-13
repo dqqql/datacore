@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
+import { APP_RELEASE_STAGE, APP_VERSION } from "@/lib/app-version";
 import { navigationGroups } from "@/lib/navigation";
 
 type AppShellProps = {
@@ -91,7 +92,7 @@ export function AppShell({ title, description, badge, children }: AppShellProps)
                     系统版本
                   </p>
                   <p className="mt-1 text-sm font-semibold text-[var(--color-ink-900)] whitespace-nowrap">
-                    正式上线版本
+                    {APP_VERSION}
                   </p>
                 </div>
                 <div className="metric-card">
@@ -99,7 +100,7 @@ export function AppShell({ title, description, badge, children }: AppShellProps)
                     服务状态
                   </p>
                   <p className="mt-1 text-sm font-semibold text-[var(--color-ink-900)] whitespace-nowrap">
-                    数据中心运行中
+                    {APP_RELEASE_STAGE}
                   </p>
                 </div>
               </div>

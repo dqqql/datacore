@@ -73,7 +73,7 @@ export default async function BootstrapCharacterPage() {
                 type="submit"
                 className="focus-ring inline-flex w-full items-center justify-center rounded-full bg-[var(--accent)] px-4 py-3 text-sm font-semibold text-white shadow-[0_12px_24px_rgba(95,66,31,0.22)] hover:bg-[var(--accent-strong)]"
               >
-                创建并进入控制台
+                创建并进入总览
               </button>
             </form>
           </div>
