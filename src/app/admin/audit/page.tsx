@@ -8,6 +8,7 @@ function formatAuditAction(action: string) {
     CHARACTER_REPUTATION_UPDATED: "声望调整",
     USER_HONOR_UPDATED: "荣誉值调整",
     PRIVATE_ITEM_CREATED: "录入私人物品",
+    PRIVATE_ITEM_DELETED: "删除私设物品",
     MARKET_LISTED: "市场上架",
     MARKET_CANCELLED: "市场下架",
     MARKET_PURCHASED: "市场成交",

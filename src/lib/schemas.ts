@@ -37,6 +37,11 @@ export const createPrivateItemSchema = z.object({
   unitPrice: z.coerce.number().int().min(0, "单价不能小于 0").max(999999, "单价不能超过 999999"),
 });
 
+export const deletePrivateItemSchema = z.object({
+  characterId: z.string().trim().min(1),
+  inventoryItemId: z.string().trim().min(1),
+});
+
 export const purchaseShopItemSchema = z.object({
   characterId: z.string().trim().min(1),
   shopItemId: z.string().trim().min(1),
