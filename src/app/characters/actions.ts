@@ -186,6 +186,7 @@ export async function updateCharacterEconomyAction(formData: FormData) {
     }
   });
 
+  revalidatePath("/", "layout");
   revalidatePath("/dashboard");
   revalidatePath(`/characters/${character.id}`);
   redirect(`/characters/${character.id}`);
@@ -270,6 +271,7 @@ export async function createPrivateItemAction(formData: FormData) {
     });
   });
 
+  revalidatePath("/", "layout");
   revalidatePath("/dashboard");
   revalidatePath(`/characters/${character.id}`);
   revalidatePath("/admin/audit");
@@ -340,6 +342,7 @@ export async function deletePrivateItemAction(formData: FormData) {
     });
   });
 
+  revalidatePath("/", "layout");
   revalidatePath("/dashboard");
   revalidatePath(`/characters/${parsed.data.characterId}`);
   revalidatePath("/admin/audit");

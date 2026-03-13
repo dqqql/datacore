@@ -202,6 +202,7 @@ export async function purchaseShopItemAction(formData: FormData) {
     throw error;
   }
 
+  revalidatePath("/", "layout");
   revalidatePath("/dashboard");
   revalidatePath(`/characters/${character.id}`);
   revalidatePath(shopPath);
@@ -348,6 +349,7 @@ export async function sellbackInventoryItemAction(formData: FormData) {
     throw error;
   }
 
+  revalidatePath("/", "layout");
   revalidatePath("/dashboard");
   revalidatePath(`/characters/${inventoryItem.characterId}`);
   revalidatePath(getShopPathFromSlug(sourceShopItem.shop.slug));
