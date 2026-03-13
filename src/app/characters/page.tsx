@@ -97,7 +97,7 @@ export default async function CharactersPage({ searchParams }: CharactersPagePro
                     <td className="numeric">{character.reputation}</td>
                     <td>{character.status === "ACTIVE" ? "活跃" : character.status}</td>
                     <td>
-                      <div className="flex flex-wrap gap-2">
+                      <div className="flex flex-nowrap gap-2 items-center">
                         <form action={selectCurrentCharacterAction}>
                           <input type="hidden" name="characterId" value={character.id} />
                           <button

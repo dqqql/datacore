@@ -98,7 +98,7 @@ export function AppShell({ title, description, badge, children }: AppShellProps)
                   <p className="text-xs font-semibold uppercase tracking-[0.18em] text-[var(--color-ink-700)]">
                     使用原则
                   </p>
-                  <p className="mt-1 text-sm font-semibold text-[var(--color-ink-900)]">
+                  <p className="mt-1 text-sm font-semibold text-[var(--color-ink-900)] whitespace-nowrap">
                     以页面实时数据为准
                   </p>
                 </div>
@@ -106,7 +106,7 @@ export function AppShell({ title, description, badge, children }: AppShellProps)
                   <p className="text-xs font-semibold uppercase tracking-[0.18em] text-[var(--color-ink-700)]">
                     当前阶段
                   </p>
-                  <p className="mt-1 text-sm font-semibold text-[var(--color-ink-900)]">
+                  <p className="mt-1 text-sm font-semibold text-[var(--color-ink-900)] whitespace-nowrap">
                     正式上线准备
                   </p>
                 </div>

@@ -43,7 +43,7 @@ export default async function DashboardPage() {
             {currentCharacter ? (
               <Link
                 href={`/characters/${currentCharacter.id}`}
-                className="focus-ring btn-secondary"
+                className="focus-ring btn-secondary shrink-0 ml-4"
               >
                 查看角色详情
               </Link>
