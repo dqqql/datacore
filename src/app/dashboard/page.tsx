@@ -205,11 +205,7 @@ export default async function DashboardPage() {
   // ── Audit log panel items ──
   const auditItems: PanelItem[] = recentAuditLogs.map((log) => ({
     id: log.id,
-    eyebrow: formatAuditAction(log.action),
-    title: log.targetCharacter?.name ?? log.targetUser?.displayName ?? log.actorUser?.displayName ?? "系统",
-    subtitle: log.note ?? undefined,
-    primary: formatAuditValue(log.afterValue) ? `→ ${formatAuditValue(log.afterValue)}` : undefined,
-    secondary: formatAuditValue(log.beforeValue) ? `原值 ${formatAuditValue(log.beforeValue)}` : undefined,
+    title: formatAuditAction(log.action),
     meta: `${formatDateLabel(log.createdAt)}${log.actorUser ? ` · ${log.actorUser.displayName}` : ""}`,
   }));
 

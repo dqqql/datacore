@@ -82,8 +82,6 @@ export default async function AdminAuditPage() {
                   <th>动作</th>
                   <th>操作人</th>
                   <th>目标对象</th>
-                  <th>调整前</th>
-                  <th>调整后</th>
                   <th>说明</th>
                 </tr>
               </thead>
@@ -97,14 +95,12 @@ export default async function AdminAuditPage() {
                       <td>{formatAuditAction(log.action)}</td>
                       <td>{log.actorUser?.displayName ?? "-"}</td>
                       <td>{log.targetCharacter?.name ?? log.targetUser?.displayName ?? "-"}</td>
-                      <td>{log.beforeValue ?? "-"}</td>
-                      <td>{log.afterValue ?? "-"}</td>
                       <td>{log.note ?? "-"}</td>
                     </tr>
                   ))
                 ) : (
                   <tr>
-                    <td colSpan={7} className="px-6 py-10 text-sm leading-6 text-[var(--muted)]">
+                    <td colSpan={5} className="px-6 py-10 text-sm leading-6 text-[var(--muted)]">
                       当前尚无审计记录。玩家操作与后台维护动作都会自动写入这里。
                     </td>
                   </tr>
