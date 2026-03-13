@@ -34,7 +34,7 @@ export function AppShell({ title, description, badge, children }: AppShellProps)
               西征数据中心
             </h1>
             <p className="mt-3 text-sm leading-6 text-[var(--muted)]">
-              角色、行囊、公会补给处与冒险者集市共用同一套数据账簿，当前以可读性、可追溯性与操作稳定性为优先。
+              欢迎来到西征模式专属的玩家数据中枢。在这里，冒险者们可以登记档案、管理行囊战利品，或是在公会补给处与冒险者集市中进行补给与自由交易。
             </p>
           </div>
 
@@ -63,18 +63,10 @@ export function AppShell({ title, description, badge, children }: AppShellProps)
           <div className="mt-6 grid gap-3">
             <div className="subtle-card rounded-[20px] px-4 py-3">
               <p className="text-xs font-semibold uppercase tracking-[0.18em] text-[var(--color-ink-700)]">
-                当前基线
+                安全守则
               </p>
               <p className="mt-1 text-sm font-semibold text-[var(--color-ink-900)]">
-                表格可读性优先
-              </p>
-            </div>
-            <div className="subtle-card rounded-[20px] px-4 py-3">
-              <p className="text-xs font-semibold uppercase tracking-[0.18em] text-[var(--color-ink-700)]">
-                上线提醒
-              </p>
-              <p className="mt-1 text-sm leading-6 text-[var(--color-ink-900)]">
-                正式发布前，请确认管理员密码文件与 Docker 环境配置一致。
+                公会所有的财务记录由世界树见证，以最终页面数据为准。
               </p>
             </div>
           </div>
@@ -96,18 +88,18 @@ export function AppShell({ title, description, badge, children }: AppShellProps)
               <div className="grid gap-3 sm:grid-cols-2">
                 <div className="metric-card">
                   <p className="text-xs font-semibold uppercase tracking-[0.18em] text-[var(--color-ink-700)]">
-                    使用原则
+                    系统版本
                   </p>
                   <p className="mt-1 text-sm font-semibold text-[var(--color-ink-900)] whitespace-nowrap">
-                    以页面实时数据为准
+                    正式上线版本
                   </p>
                 </div>
                 <div className="metric-card">
                   <p className="text-xs font-semibold uppercase tracking-[0.18em] text-[var(--color-ink-700)]">
-                    当前阶段
+                    服务状态
                   </p>
                   <p className="mt-1 text-sm font-semibold text-[var(--color-ink-900)] whitespace-nowrap">
-                    正式上线准备
+                    数据中心运行中
                   </p>
                 </div>
               </div>
