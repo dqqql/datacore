@@ -1,7 +1,7 @@
 "use client";
 
 import { useFormStatus } from "react-dom";
-import { useState, useEffect, type ReactNode } from "react";
+import { useState, useEffect, useRef, type ReactNode } from "react";
 import { Modal } from "./modal";
 
 type ConfirmSubmitButtonProps = {
@@ -21,6 +21,7 @@ export function ConfirmSubmitButton({
 }: ConfirmSubmitButtonProps) {
   const { pending } = useFormStatus();
   const [isModalOpen, setIsModalOpen] = useState(false);
+  const triggerRef = useRef<HTMLButtonElement>(null);
 
   // Auto-close modal when submission starts
   useEffect(() => {
@@ -36,9 +37,18 @@ export function ConfirmSubmitButton({
     }
   };
 
+  const handleConfirm = () => {
+    // Manually trigger the form submission since the modal button is portalled out of the form
+    const form = triggerRef.current?.form;
+    if (form) {
+      form.requestSubmit();
+    }
+  };
+
   return (
     <>
       <button
+        ref={triggerRef}
         type={confirmMessage ? "button" : "submit"}
         className={`${className} ${pending ? "opacity-50 cursor-not-allowed" : ""}`}
         onClick={handleTrigger}
@@ -63,8 +73,9 @@ export function ConfirmSubmitButton({
                 返回
               </button>
               <button
-                type="submit"
+                type="button"
                 className={`${confirmTone === "danger" ? "btn-danger" : "btn-primary"} w-full sm:w-auto`}
+                onClick={handleConfirm}
                 disabled={pending}
               >
                 {pending ? "处理中..." : "确认执行"}
