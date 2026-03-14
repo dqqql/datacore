@@ -1,7 +1,6 @@
 "use server";
 
 import { randomInt } from "crypto";
-import type { Prisma } from "@prisma/client";
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { requireAdminSession } from "@/lib/auth-helpers";
@@ -9,7 +8,7 @@ import { prisma } from "@/lib/prisma";
 import {
   adjustUserHonorSchema,
   createShopItemSchema,
-  refreshPasswordPoolSchema,
+  selectUserSchema,
   updateShopItemSchema,
 } from "@/lib/schemas";
 
@@ -59,12 +58,6 @@ function getShopPathFromSlug(shopSlug: string) {
   return "/shops/guild";
 }
 
-class AdminShopActionError extends Error {
-  constructor(public readonly code: string) {
-    super(code);
-  }
-}
-
 function snapshotShopItem(item: {
   shopId: string;
   name: string;
@@ -85,42 +78,6 @@ function snapshotShopItem(item: {
     sortOrder: item.sortOrder,
     isActive: item.isActive,
   };
-}
-
-async function consumeOneTimePassword(tx: Prisma.TransactionClient, code: string) {
-  const password = await tx.oneTimePassword.findFirst({
-    where: {
-      code,
-      isUsed: false,
-      pool: {
-        isActive: true,
-      },
-    },
-    select: {
-      id: true,
-      poolId: true,
-    },
-  });
-
-  if (!password) {
-    throw new AdminShopActionError("invalid-otp");
-  }
-
-  const consumed = await tx.oneTimePassword.updateMany({
-    where: {
-      id: password.id,
-      isUsed: false,
-      poolId: password.poolId,
-    },
-    data: {
-      isUsed: true,
-      usedAt: new Date(),
-    },
-  });
-
-  if (consumed.count !== 1) {
-    throw new AdminShopActionError("invalid-otp");
-  }
 }
 
 function revalidateShopPaths(shopSlug: string) {
@@ -237,7 +194,6 @@ export async function createShopItemAction(formData: FormData) {
     price: formData.get("price"),
     importedSource: formData.get("importedSource"),
     sortOrder: formData.get("sortOrder"),
-    otpCode: formData.get("otpCode"),
   });
 
   if (!parsed.success) {
@@ -267,50 +223,33 @@ export async function createShopItemAction(formData: FormData) {
     );
   }
 
-  try {
-    await prisma.$transaction(async (tx) => {
-      await consumeOneTimePassword(tx, parsed.data.otpCode);
-
-      const createdItem = await tx.shopItem.create({
-        data: {
-          shopId: shop.id,
-          name: parsed.data.name,
-          description: parsed.data.description,
-          category: parsed.data.category,
-          price: parsed.data.price,
-          importedSource: parsed.data.importedSource,
-          sortOrder: parsed.data.sortOrder,
-          isActive: true,
-        },
-      });
-
-      await tx.auditLog.create({
-        data: {
-          actorUserId: session.user.id,
-          targetUserId: session.user.id,
-          action: "SHOP_ITEM_UPDATED",
-          entityType: "ShopItem",
-          entityId: createdItem.id,
-          beforeValue: null,
-          afterValue: JSON.stringify(snapshotShopItem(createdItem)),
-          note: `新建商店条目：${createdItem.name}（${shop.name}）`,
-        },
-      });
+  await prisma.$transaction(async (tx) => {
+    const createdItem = await tx.shopItem.create({
+      data: {
+        shopId: shop.id,
+        name: parsed.data.name,
+        description: parsed.data.description,
+        category: parsed.data.category,
+        price: parsed.data.price,
+        importedSource: parsed.data.importedSource,
+        sortOrder: parsed.data.sortOrder,
+        isActive: true,
+      },
     });
-  } catch (error) {
-    if (error instanceof AdminShopActionError && error.code === "invalid-otp") {
-      redirect(
-        buildAdminShopsRedirect({
-          shopError: "invalid-otp",
-          page: returnState.page,
-          mode: "create",
-          shopId: returnState.shopId ?? shop.id,
-        }),
-      );
-    }
 
-    throw error;
-  }
+    await tx.auditLog.create({
+      data: {
+        actorUserId: session.user.id,
+        targetUserId: session.user.id,
+        action: "SHOP_ITEM_UPDATED",
+        entityType: "ShopItem",
+        entityId: createdItem.id,
+        beforeValue: null,
+        afterValue: JSON.stringify(snapshotShopItem(createdItem)),
+        note: `新建商店条目：${createdItem.name}（${shop.name}）`,
+      },
+    });
+  });
 
   revalidateShopPaths(shop.slug);
   redirect(
@@ -333,7 +272,6 @@ export async function updateShopItemAction(formData: FormData) {
     importedSource: formData.get("importedSource"),
     sortOrder: formData.get("sortOrder"),
     isActive: formData.get("isActive"),
-    otpCode: formData.get("otpCode"),
   });
 
   if (!parsed.success) {
@@ -372,50 +310,33 @@ export async function updateShopItemAction(formData: FormData) {
 
   const beforeSnapshot = snapshotShopItem(existingItem);
 
-  try {
-    await prisma.$transaction(async (tx) => {
-      await consumeOneTimePassword(tx, parsed.data.otpCode);
-
-      const updatedItem = await tx.shopItem.update({
-        where: { id: existingItem.id },
-        data: {
-          name: parsed.data.name,
-          description: parsed.data.description,
-          category: parsed.data.category,
-          price: parsed.data.price,
-          importedSource: parsed.data.importedSource,
-          sortOrder: parsed.data.sortOrder,
-          isActive: parsed.data.isActive,
-        },
-      });
-
-      await tx.auditLog.create({
-        data: {
-          actorUserId: session.user.id,
-          targetUserId: session.user.id,
-          action: "SHOP_ITEM_UPDATED",
-          entityType: "ShopItem",
-          entityId: updatedItem.id,
-          beforeValue: JSON.stringify(beforeSnapshot),
-          afterValue: JSON.stringify(snapshotShopItem(updatedItem)),
-          note: `维护商店条目：${updatedItem.name}（${existingItem.shop.name}）`,
-        },
-      });
+  await prisma.$transaction(async (tx) => {
+    const updatedItem = await tx.shopItem.update({
+      where: { id: existingItem.id },
+      data: {
+        name: parsed.data.name,
+        description: parsed.data.description,
+        category: parsed.data.category,
+        price: parsed.data.price,
+        importedSource: parsed.data.importedSource,
+        sortOrder: parsed.data.sortOrder,
+        isActive: parsed.data.isActive,
+      },
     });
-  } catch (error) {
-    if (error instanceof AdminShopActionError && error.code === "invalid-otp") {
-      redirect(
-        buildAdminShopsRedirect({
-          shopError: "invalid-otp",
-          page: returnState.page,
-          mode: "edit",
-          itemId: returnState.itemId ?? existingItem.id,
-        }),
-      );
-    }
 
-    throw error;
-  }
+    await tx.auditLog.create({
+      data: {
+        actorUserId: session.user.id,
+        targetUserId: session.user.id,
+        action: "SHOP_ITEM_UPDATED",
+        entityType: "ShopItem",
+        entityId: updatedItem.id,
+        beforeValue: JSON.stringify(beforeSnapshot),
+        afterValue: JSON.stringify(snapshotShopItem(updatedItem)),
+        note: `维护商店条目：${updatedItem.name}（${existingItem.shop.name}）`,
+      },
+    });
+  });
 
   revalidateShopPaths(existingItem.shop.slug);
   redirect(
@@ -424,4 +345,71 @@ export async function updateShopItemAction(formData: FormData) {
       page: returnState.page,
     }),
   );
+}
+
+export async function deleteUserAction(formData: FormData) {
+  const session = await requireAdminSession();
+  const parsed = selectUserSchema.safeParse({
+    userId: formData.get("userId"),
+  });
+
+  if (!parsed.success) {
+    redirect(buildRedirect("/admin/users", "userDeleteError", "invalid-user"));
+  }
+
+  const targetUser = await prisma.user.findUnique({
+    where: { id: parsed.data.userId },
+    include: {
+      characters: {
+        select: {
+          id: true,
+          name: true,
+        },
+      },
+    },
+  });
+
+  if (!targetUser) {
+    redirect(buildRedirect("/admin/users", "userDeleteError", "user-not-found"));
+  }
+
+  if (targetUser.role === "ADMIN") {
+    redirect(buildRedirect("/admin/users", "userDeleteError", "admin-delete-blocked"));
+  }
+
+  if (targetUser.id === session.user.id) {
+    redirect(buildRedirect("/admin/users", "userDeleteError", "self-delete-blocked"));
+  }
+
+  await prisma.$transaction(async (tx) => {
+    await tx.user.delete({
+      where: { id: targetUser.id },
+    });
+
+    await tx.auditLog.create({
+      data: {
+        actorUserId: session.user.id,
+        action: "USER_DELETED",
+        entityType: "User",
+        entityId: targetUser.id,
+        beforeValue: JSON.stringify({
+          username: targetUser.username,
+          displayName: targetUser.displayName,
+          role: targetUser.role,
+          honor: targetUser.honor,
+          characters: targetUser.characters.map((character) => ({
+            id: character.id,
+            name: character.name,
+          })),
+        }),
+        note: `管理员删除账号：${targetUser.displayName}`,
+      },
+    });
+  });
+
+  revalidatePath("/admin/users");
+  revalidatePath("/admin/audit");
+  revalidatePath("/characters");
+  revalidatePath("/dashboard");
+  redirect(buildRedirect("/admin/users", "userDeleteSuccess", "user-deleted"));
 }

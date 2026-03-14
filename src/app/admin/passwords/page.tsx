@@ -41,14 +41,14 @@ export default async function AdminPasswordsPage({ searchParams }: AdminPassword
     <AppShell
       title="一次性密码池"
       badge="密码池"
-      description="这里负责维护公共商店条目修改所需的一次性密码。每次刷新固定生成 10 组，旧批次立即失效，新批次即时生效。"
+      description="这里负责维护普通成员可使用的一次性密码。当前首个用途是种植系统的地块扩容。每次刷新固定生成 10 组，旧批次立即失效，新批次即时生效。"
     >
       <section className="grid gap-6 xl:grid-cols-[0.85fr_1.15fr]">
         {/* Left: refresh control */}
         <article className="panel rounded-[28px] p-6">
           <h3 className="section-title text-2xl font-semibold">刷新密码池</h3>
           <p className="mt-2 text-sm leading-6 text-[var(--muted)]">
-            刷新时会先停用全部活跃批次，再创建新的可用批次，每次固定生成 10 组密码。
+            刷新时会先停用全部活跃批次，再创建新的可用批次，每次固定生成 10 组密码，供普通成员执行需 OTP 的功能使用。
           </p>
 
           {otpErrorMessage ? (

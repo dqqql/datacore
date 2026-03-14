@@ -1,4 +1,5 @@
 import { AppShell } from "@/components/app-shell";
+import { SharedActionPasswordField } from "@/components/shared-action-password-field";
 import { requirePlayerCharacter } from "@/lib/auth-helpers";
 import { prisma } from "@/lib/prisma";
 import {
@@ -20,6 +21,7 @@ const marketMessages = {
   cancelUnavailable: "该寄售当前无法撤销。",
   invalidPurchase: "购买失败，请检查当前角色与寄售单状态后重试。",
   purchaseUnavailable: "该寄售单当前不可入手，可能已售出或被撤销。",
+  passwordInvalid: "请输入当前账号密码后再执行市场相关操作。",
   selfPurchase: "不能入手自己委托的物品。",
   insufficientGold: "当前角色金币不足，无法完成此次入手。",
   cancelCompleted: "寄售已撤销，物品已返回卖方角色行囊。",
@@ -52,8 +54,10 @@ export default async function MarketPage({ searchParams }: MarketPageProps) {
         ? marketMessages.cancelUnavailable
         : query.marketError === "invalid-purchase"
           ? marketMessages.invalidPurchase
-          : query.marketError === "purchase-unavailable"
+        : query.marketError === "purchase-unavailable"
             ? marketMessages.purchaseUnavailable
+            : query.marketError === "password-invalid"
+              ? marketMessages.passwordInvalid
             : query.marketError === "self-purchase"
               ? marketMessages.selfPurchase
               : query.marketError === "insufficient-gold"
@@ -140,6 +144,14 @@ export default async function MarketPage({ searchParams }: MarketPageProps) {
             </span>
           </div>
 
+          <div className="mb-4 rounded-[20px] border border-[var(--border-soft)] bg-[rgba(255,250,241,0.84)] px-4 py-4">
+            <SharedActionPasswordField
+              group="market-page"
+              compact
+              helperText="本页的购买和下架都会使用这一个账号密码。管理员账号可忽略。"
+            />
+          </div>
+
           <div className="table-shell">
             <table>
               <thead>
@@ -177,6 +189,7 @@ export default async function MarketPage({ searchParams }: MarketPageProps) {
                               <input type="hidden" name="characterId" value={listing.sellerCharacterId} />
                               <input type="hidden" name="listingId" value={listing.id} />
                               <input type="hidden" name="redirectPath" value="/market" />
+                              <input type="hidden" name="actionPassword" data-shared-password-group="market-page" />
                               <button
                                 type="submit"
                                 className="focus-ring btn-secondary btn-compact"
@@ -188,6 +201,7 @@ export default async function MarketPage({ searchParams }: MarketPageProps) {
                             <form action={purchaseMarketListingAction}>
                               <input type="hidden" name="buyerCharacterId" value={currentCharacter?.id ?? ""} />
                               <input type="hidden" name="listingId" value={listing.id} />
+                              <input type="hidden" name="actionPassword" data-shared-password-group="market-page" />
                               <button
                                 type="submit"
                                 disabled={!currentCharacter}

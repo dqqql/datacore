@@ -20,6 +20,10 @@ export const selectCharacterSchema = z.object({
   characterId: z.string().trim().min(1),
 });
 
+export const selectUserSchema = z.object({
+  userId: z.string().trim().min(1),
+});
+
 export const createUserSchema = z.object({
   username: z.string().trim().min(1, "账号不能为空").max(40, "账号不能超过 40 个字符"),
   password: z.string().min(6, "密码至少 6 位").max(128, "密码长度过长"),
@@ -121,7 +125,6 @@ export const createShopItemSchema = z.object({
     .int("排序必须是整数")
     .min(0, "排序不能小于 0")
     .max(9999, "排序不能超过 9999"),
-  otpCode: z.string().trim().min(1, "请填写一次性密码").max(120, "一次性密码长度过长"),
 });
 
 export const updateShopItemSchema = z.object({
@@ -137,5 +140,4 @@ export const updateShopItemSchema = z.object({
     .min(0, "排序不能小于 0")
     .max(9999, "排序不能超过 9999"),
   isActive: z.enum(["true", "false"]).transform((value) => value === "true"),
-  otpCode: z.string().trim().min(1, "请填写一次性密码").max(120, "一次性密码长度过长"),
 });

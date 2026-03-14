@@ -1,6 +1,7 @@
 import { AppShell } from "@/components/app-shell";
-import { adjustUserHonorAction } from "@/app/admin/actions";
+import { adjustUserHonorAction, deleteUserAction } from "@/app/admin/actions";
 import { createUserAction, restoreCharacterAction } from "@/app/characters/actions";
+import { ConfirmSubmitButton } from "@/components/confirm-submit-button";
 import { prisma } from "@/lib/prisma";
 import { requireAdminSession } from "@/lib/auth-helpers";
 
@@ -13,6 +14,8 @@ type AdminUsersPageProps = {
     characterError?: string;
     characterSuccess?: string;
     error?: string;
+    userDeleteError?: string;
+    userDeleteSuccess?: string;
   }>;
 };
 
@@ -32,6 +35,11 @@ const characterMessages = {
 const userMessages = {
   invalid: "账号创建失败，请检查账号名与初始密码后重试。",
   exists: "该账号名已存在，请更换后重试。",
+  deleteInvalid: "删除账号失败，请刷新页面后重试。",
+  deleteNotFound: "目标账号不存在，可能已被删除。",
+  deleteAdminBlocked: "管理员账号不允许通过此入口删除。",
+  deleteSelfBlocked: "不能删除当前登录的管理员账号。",
+  deleteSuccess: "账号已删除，关联角色与背包数据也已一并清理。",
 } as const;
 
 function formatRole(role: string) {
@@ -76,6 +84,18 @@ export default async function AdminUsersPage({ searchParams }: AdminUsersPagePro
       : query.error === "user-exists"
         ? userMessages.exists
         : null;
+  const userDeleteErrorMessage =
+    query.userDeleteError === "invalid-user"
+      ? userMessages.deleteInvalid
+      : query.userDeleteError === "user-not-found"
+        ? userMessages.deleteNotFound
+        : query.userDeleteError === "admin-delete-blocked"
+          ? userMessages.deleteAdminBlocked
+          : query.userDeleteError === "self-delete-blocked"
+            ? userMessages.deleteSelfBlocked
+            : null;
+  const userDeleteSuccessMessage =
+    query.userDeleteSuccess === "user-deleted" ? userMessages.deleteSuccess : null;
 
   return (
     <AppShell
@@ -104,6 +124,18 @@ export default async function AdminUsersPage({ searchParams }: AdminUsersPagePro
             </div>
           ) : null}
 
+          {userDeleteErrorMessage ? (
+            <div className="status-message mb-4" data-tone="danger">
+              {userDeleteErrorMessage}
+            </div>
+          ) : null}
+
+          {userDeleteSuccessMessage ? (
+            <div className="status-message mb-4" data-tone="success">
+              {userDeleteSuccessMessage}
+            </div>
+          ) : null}
+
           <div className="table-shell">
             <table>
               <thead>
@@ -113,6 +145,7 @@ export default async function AdminUsersPage({ searchParams }: AdminUsersPagePro
                   <th>荣誉值</th>
                   <th>活跃角色数</th>
                   <th>归档角色</th>
+                  <th>账号操作</th>
                 </tr>
               </thead>
               <tbody>
@@ -146,6 +179,23 @@ export default async function AdminUsersPage({ searchParams }: AdminUsersPagePro
                           </div>
                         ) : (
                           <span className="text-sm text-[var(--muted)]">无</span>
+                        )}
+                      </td>
+                      <td>
+                        {user.role === "PLAYER" ? (
+                          <form action={deleteUserAction}>
+                            <input type="hidden" name="userId" value={user.id} />
+                            <ConfirmSubmitButton
+                              className="focus-ring btn-danger btn-compact"
+                              confirmTitle="确认删除账号"
+                              confirmTone="danger"
+                              confirmMessage={`确认永久删除账号“${user.displayName}”吗？该账号下的角色、背包、挂单与种植数据都会一起删除，且无法恢复。`}
+                            >
+                              删除账号
+                            </ConfirmSubmitButton>
+                          </form>
+                        ) : (
+                          <span className="text-sm text-[var(--muted)]">管理员账号</span>
                         )}
                       </td>
                     </tr>

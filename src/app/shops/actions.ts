@@ -2,7 +2,7 @@
 
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
-import { requireSession } from "@/lib/auth-helpers";
+import { ActionPasswordError, requireActionPassword } from "@/lib/auth-helpers";
 import { prisma } from "@/lib/prisma";
 import { purchaseShopItemSchema, sellbackInventoryItemSchema } from "@/lib/schemas";
 import { ensureDefaultShops } from "@/lib/bootstrap-shops";
@@ -27,10 +27,21 @@ class ShopActionError extends Error {
 }
 
 export async function purchaseShopItemAction(formData: FormData) {
-  const session = await requireSession();
+  let session;
   await ensureDefaultShops();
 
   const fallbackPath = String(formData.get("shopPath") ?? "/shops/guild");
+
+  try {
+    session = await requireActionPassword(formData);
+  } catch (error) {
+    if (error instanceof ActionPasswordError) {
+      redirect(buildRedirect(fallbackPath, "shopError", "password-invalid"));
+    }
+
+    throw error;
+  }
+
   const parsed = purchaseShopItemSchema.safeParse({
     characterId: formData.get("characterId"),
     shopItemId: formData.get("shopItemId"),
@@ -210,10 +221,25 @@ export async function purchaseShopItemAction(formData: FormData) {
 }
 
 export async function sellbackInventoryItemAction(formData: FormData) {
-  const session = await requireSession();
+  let session;
   await ensureDefaultShops();
 
   const fallbackCharacterId = String(formData.get("characterId") ?? "").trim();
+
+  try {
+    session = await requireActionPassword(formData);
+  } catch (error) {
+    if (error instanceof ActionPasswordError) {
+      if (fallbackCharacterId) {
+        redirect(buildRedirect(`/characters/${fallbackCharacterId}`, "sellbackError", "password-invalid"));
+      }
+
+      redirect("/characters?characterError=password-invalid");
+    }
+
+    throw error;
+  }
+
   const parsed = sellbackInventoryItemSchema.safeParse({
     characterId: formData.get("characterId"),
     inventoryItemId: formData.get("inventoryItemId"),

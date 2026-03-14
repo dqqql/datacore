@@ -2,7 +2,7 @@
 
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
-import { requireSession } from "@/lib/auth-helpers";
+import { ActionPasswordError, requireActionPassword } from "@/lib/auth-helpers";
 import { prisma } from "@/lib/prisma";
 import {
   cancelMarketListingSchema,
@@ -22,8 +22,23 @@ class MarketActionError extends Error {
 }
 
 export async function createMarketListingAction(formData: FormData) {
-  const session = await requireSession();
+  let session;
   const fallbackCharacterId = String(formData.get("characterId") ?? "").trim();
+
+  try {
+    session = await requireActionPassword(formData);
+  } catch (error) {
+    if (error instanceof ActionPasswordError) {
+      if (fallbackCharacterId) {
+        redirect(buildRedirect(`/characters/${fallbackCharacterId}`, "listingError", "password-invalid"));
+      }
+
+      redirect("/characters?characterError=password-invalid");
+    }
+
+    throw error;
+  }
+
   const parsed = createMarketListingSchema.safeParse({
     characterId: formData.get("characterId"),
     inventoryItemId: formData.get("inventoryItemId"),
@@ -124,9 +139,28 @@ export async function createMarketListingAction(formData: FormData) {
 }
 
 export async function cancelMarketListingAction(formData: FormData) {
-  const session = await requireSession();
+  let session;
   const fallbackCharacterId = String(formData.get("characterId") ?? "").trim();
   const redirectPath = String(formData.get("redirectPath") ?? "").trim();
+
+  try {
+    session = await requireActionPassword(formData);
+  } catch (error) {
+    if (error instanceof ActionPasswordError) {
+      if (redirectPath === "/market") {
+        redirect(buildRedirect("/market", "marketError", "password-invalid"));
+      }
+
+      if (fallbackCharacterId) {
+        redirect(buildRedirect(`/characters/${fallbackCharacterId}`, "listingError", "password-invalid"));
+      }
+
+      redirect("/market?marketError=password-invalid");
+    }
+
+    throw error;
+  }
+
   const parsed = cancelMarketListingSchema.safeParse({
     characterId: formData.get("characterId"),
     listingId: formData.get("listingId"),
@@ -237,7 +271,18 @@ export async function cancelMarketListingAction(formData: FormData) {
 }
 
 export async function purchaseMarketListingAction(formData: FormData) {
-  const session = await requireSession();
+  let session;
+
+  try {
+    session = await requireActionPassword(formData);
+  } catch (error) {
+    if (error instanceof ActionPasswordError) {
+      redirect(buildRedirect("/market", "marketError", "password-invalid"));
+    }
+
+    throw error;
+  }
+
   const parsed = purchaseMarketListingSchema.safeParse({
     buyerCharacterId: formData.get("buyerCharacterId"),
     listingId: formData.get("listingId"),

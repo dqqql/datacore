@@ -41,6 +41,7 @@ function formatAuditAction(action: string) {
     SHOP_PASSWORD_POOL_REFRESHED: "密码池刷新",
     CHARACTER_ARCHIVED: "角色归档",
     CHARACTER_RESTORED: "角色恢复",
+    USER_DELETED: "账号删除",
     PLANTING_SEED_PLANTED: "温室播种",
     PLANTING_SEED_HARVESTED: "温室收获",
     PLANTING_PLOT_EXPANDED: "温室扩容",

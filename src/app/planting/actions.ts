@@ -2,7 +2,7 @@
 
 import { PlantPlotStatus } from "@prisma/client";
 import { revalidatePath } from "next/cache";
-import { requirePlayerCharacter } from "@/lib/auth-helpers";
+import { ActionPasswordError, requireActionPasswordValue, requirePlayerCharacter } from "@/lib/auth-helpers";
 import {
   BASE_PLOT_COUNT,
   EXPANDED_PLOT_COUNT,
@@ -43,7 +43,7 @@ async function requireCurrentCharacter() {
   return context.currentCharacter;
 }
 
-export async function redeemPlotExpansionAction(otpCode: string): Promise<PlantingActionResult> {
+export async function redeemPlotExpansionAction(otpCode: string, password: string): Promise<PlantingActionResult> {
   const parsed = redeemPlotExpansionSchema.safeParse({ otpCode });
 
   if (!parsed.success) {
@@ -51,6 +51,7 @@ export async function redeemPlotExpansionAction(otpCode: string): Promise<Planti
   }
 
   try {
+    await requireActionPasswordValue(password);
     const character = await requireCurrentCharacter();
     await ensurePlantingPlots(character.id);
 
@@ -122,6 +123,10 @@ export async function redeemPlotExpansionAction(otpCode: string): Promise<Planti
     revalidatePlantingPaths(character.id);
     return { ok: true, message: "地块已扩容到 4 x 4，新的温室格位已解锁。" };
   } catch (error) {
+    if (error instanceof ActionPasswordError) {
+      return { ok: false, error: "请输入当前账号密码后再执行该操作。" };
+    }
+
     if (error instanceof PlantingActionError) {
       return { ok: false, error: error.message };
     }
@@ -130,7 +135,11 @@ export async function redeemPlotExpansionAction(otpCode: string): Promise<Planti
   }
 }
 
-export async function plantSeedAction(plotIndex: number, element: string): Promise<PlantingActionResult> {
+export async function plantSeedAction(
+  plotIndex: number,
+  element: string,
+  password: string,
+): Promise<PlantingActionResult> {
   const parsed = plantSeedSchema.safeParse({ plotIndex, element });
 
   if (!parsed.success) {
@@ -138,6 +147,7 @@ export async function plantSeedAction(plotIndex: number, element: string): Promi
   }
 
   try {
+    await requireActionPasswordValue(password);
     const character = await requireCurrentCharacter();
     await ensurePlantingPlots(character.id);
 
@@ -237,6 +247,10 @@ export async function plantSeedAction(plotIndex: number, element: string): Promi
     revalidatePlantingPaths(character.id);
     return { ok: true, message: "播种完成，温室已开始培养新的元素材料。" };
   } catch (error) {
+    if (error instanceof ActionPasswordError) {
+      return { ok: false, error: "请输入当前账号密码后再执行播种。" };
+    }
+
     if (error instanceof PlantingActionError) {
       return { ok: false, error: error.message };
     }
@@ -245,7 +259,7 @@ export async function plantSeedAction(plotIndex: number, element: string): Promi
   }
 }
 
-export async function harvestPlotAction(plotIndex: number): Promise<PlantingActionResult> {
+export async function harvestPlotAction(plotIndex: number, password: string): Promise<PlantingActionResult> {
   const parsed = harvestPlotSchema.safeParse({ plotIndex });
 
   if (!parsed.success) {
@@ -253,6 +267,7 @@ export async function harvestPlotAction(plotIndex: number): Promise<PlantingActi
   }
 
   try {
+    await requireActionPasswordValue(password);
     const character = await requireCurrentCharacter();
     await ensurePlantingPlots(character.id);
 
@@ -345,6 +360,10 @@ export async function harvestPlotAction(plotIndex: number): Promise<PlantingActi
     revalidatePlantingPaths(character.id);
     return { ok: true, message: "收获成功，材料已放入当前角色背包。" };
   } catch (error) {
+    if (error instanceof ActionPasswordError) {
+      return { ok: false, error: "请输入当前账号密码后再执行收获。" };
+    }
+
     if (error instanceof PlantingActionError) {
       return { ok: false, error: error.message };
     }
