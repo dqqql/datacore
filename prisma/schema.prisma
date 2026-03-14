@@ -27,6 +27,21 @@ enum CurrencyType {
   HONOR
 }
 
+enum PlantPlotStatus {
+  EMPTY
+  GROWING
+  READY
+  HARVESTED
+}
+
+enum SeedElementType {
+  WOOD
+  FIRE
+  EARTH
+  METAL
+  WATER
+}
+
 enum ItemOwnershipType {
   PUBLIC
   PRIVATE
@@ -53,6 +68,9 @@ enum AuditAction {
   SHOP_PASSWORD_POOL_REFRESHED
   CHARACTER_ARCHIVED
   CHARACTER_RESTORED
+  PLANTING_SEED_PLANTED
+  PLANTING_SEED_HARVESTED
+  PLANTING_PLOT_EXPANDED
 }
 
 model User {
@@ -85,9 +103,11 @@ model Character {
   user            User             @relation(fields: [userId], references: [id], onDelete: Cascade)
   selectedByUsers User[]           @relation("CurrentCharacter")
   inventoryItems  InventoryItem[]
+  plantPlots      PlantPlot[]
   sellingListings MarketListing[]  @relation("SellerCharacter")
   buyingListings  MarketListing[]  @relation("BuyerCharacter")
   auditLogs       AuditLog[]       @relation("AuditTargetCharacter")
+  usedOneTimePasswords OneTimePassword[] @relation("PlantingOtpConsumer")
   createdAt       DateTime         @default(now())
   updatedAt       DateTime         @updatedAt
 
@@ -147,6 +167,23 @@ model InventoryItem {
   @@index([sourceShopItemId])
 }
 
+model PlantPlot {
+  id          String          @id @default(cuid())
+  characterId String
+  index       Int
+  status      PlantPlotStatus @default(EMPTY)
+  seedElement SeedElementType?
+  plantedAt   DateTime?
+  maturesAt   DateTime?
+  harvestedAt DateTime?
+  character   Character       @relation(fields: [characterId], references: [id], onDelete: Cascade)
+  createdAt   DateTime        @default(now())
+  updatedAt   DateTime        @updatedAt
+
+  @@unique([characterId, index])
+  @@index([characterId])
+}
+
 model MarketListing {
   id                String        @id @default(cuid())
   inventoryItemId   String        @unique
@@ -176,15 +213,19 @@ model OneTimePasswordPool {
 }
 
 model OneTimePassword {
-  id        String             @id @default(cuid())
-  poolId    String
-  code      String             @unique
-  isUsed    Boolean            @default(false)
-  usedAt    DateTime?
-  pool      OneTimePasswordPool @relation(fields: [poolId], references: [id], onDelete: Cascade)
-  createdAt DateTime           @default(now())
+  id                String              @id @default(cuid())
+  poolId            String
+  code              String              @unique
+  isUsed            Boolean             @default(false)
+  usedAt            DateTime?
+  usedByCharacterId String?
+  usageNote         String?
+  pool              OneTimePasswordPool @relation(fields: [poolId], references: [id], onDelete: Cascade)
+  usedByCharacter   Character?          @relation("PlantingOtpConsumer", fields: [usedByCharacterId], references: [id], onDelete: SetNull)
+  createdAt         DateTime            @default(now())
 
   @@index([poolId, isUsed])
+  @@index([usedByCharacterId])
 }
 
 model AuditLog {

@@ -20,6 +20,9 @@ function formatAuditAction(action: string) {
     SHOP_PASSWORD_POOL_REFRESHED: "密码池刷新",
     CHARACTER_ARCHIVED: "角色归档",
     CHARACTER_RESTORED: "角色恢复",
+    PLANTING_SEED_PLANTED: "种植播种",
+    PLANTING_SEED_HARVESTED: "种植收获",
+    PLANTING_PLOT_EXPANDED: "地块扩容",
   };
 
   return labels[action] ?? action;
@@ -57,7 +60,7 @@ export default async function AdminAuditPage() {
                 覆盖模块
               </p>
               <p className="mt-1 text-sm font-semibold text-[var(--color-ink-900)]">
-                角色、荣誉、商店、市场
+                角色、荣誉、商店、市场、种植
               </p>
             </div>
             <div className="rounded-2xl border border-[var(--border-soft)] bg-[rgba(255,250,241,0.82)] px-4 py-3">

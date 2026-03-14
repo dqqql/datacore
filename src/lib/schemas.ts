@@ -1,4 +1,5 @@
 import { z } from "zod";
+import { SeedElementType } from "@prisma/client";
 
 export const loginSchema = z.object({
   username: z.string().trim().min(1).max(40),
@@ -67,6 +68,19 @@ export const cancelMarketListingSchema = z.object({
 export const purchaseMarketListingSchema = z.object({
   buyerCharacterId: z.string().trim().min(1),
   listingId: z.string().trim().min(1),
+});
+
+export const plantSeedSchema = z.object({
+  plotIndex: z.coerce.number().int().min(0).max(15),
+  element: z.nativeEnum(SeedElementType),
+});
+
+export const harvestPlotSchema = z.object({
+  plotIndex: z.coerce.number().int().min(0).max(15),
+});
+
+export const redeemPlotExpansionSchema = z.object({
+  otpCode: z.string().trim().min(1, "请输入地契密码").max(120, "地契密码长度过长"),
 });
 
 export const adjustUserHonorSchema = z.object({

@@ -7,6 +7,7 @@ export const navigationGroups = [
       { label: "荣誉等级", href: "/honor-tiers", badge: "等级" },
       { label: "角色卡册", href: "/characters", badge: "角色" },
       { label: "冒险者集市", href: "/market", badge: "市场" },
+      { label: "公会温室", href: "/planting", badge: "种植" },
     ],
   },
   {

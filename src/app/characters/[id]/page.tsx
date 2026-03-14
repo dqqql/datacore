@@ -13,6 +13,7 @@ import {
 } from "@/app/market/actions";
 import { sellbackInventoryItemAction } from "@/app/shops/actions";
 import { ConfirmSubmitButton } from "@/components/confirm-submit-button";
+import { isPlantingMaterialName, isPlantingSeedName } from "@/lib/planting";
 
 export const dynamic = "force-dynamic";
 
@@ -58,6 +59,18 @@ function formatOwnershipType(type: "PUBLIC" | "PRIVATE") {
   return type === "PRIVATE" ? "私设物品" : "规则书物品";
 }
 
+function getPlantingTag(name: string) {
+  if (isPlantingSeedName(name)) {
+    return "种植种子";
+  }
+
+  if (isPlantingMaterialName(name)) {
+    return "种植材料";
+  }
+
+  return null;
+}
+
 function formatAuditAction(action: string) {
   const labels: Record<string, string> = {
     CHARACTER_GOLD_UPDATED: "金币调整",
@@ -69,6 +82,9 @@ function formatAuditAction(action: string) {
     MARKET_PURCHASED: "集市入手",
     SHOP_PURCHASED: "商店购买",
     SHOP_SELLBACK: "半价典当",
+    PLANTING_SEED_PLANTED: "温室播种",
+    PLANTING_SEED_HARVESTED: "温室收获",
+    PLANTING_PLOT_EXPANDED: "温室扩容",
   };
 
   return labels[action] ?? action;
@@ -153,7 +169,9 @@ export default async function CharacterDetailPage({ params, searchParams }: Char
         ? listingMessages.cancelled
         : null;
 
-  const publicInventoryItems = character.inventoryItems.filter((item) => item.ownershipType === "PUBLIC");
+  const publicInventoryItems = character.inventoryItems.filter(
+    (item) => item.ownershipType === "PUBLIC" && !isPlantingSeedName(item.name),
+  );
 
   return (
     <AppShell
@@ -266,7 +284,14 @@ export default async function CharacterDetailPage({ params, searchParams }: Char
                       <tr key={item.id}>
                         <td>
                           <div className="flex flex-col gap-1">
-                            <span className="font-semibold text-[var(--color-ink-900)]">{item.name}</span>
+                            <div className="flex flex-wrap items-center gap-2">
+                              <span className="font-semibold text-[var(--color-ink-900)]">{item.name}</span>
+                              {getPlantingTag(item.name) ? (
+                                <span className="rounded-full border border-[rgba(127,92,47,0.18)] bg-[rgba(127,92,47,0.08)] px-2.5 py-0.5 text-[10px] font-semibold uppercase tracking-[0.14em] text-[var(--accent-strong)]">
+                                  {getPlantingTag(item.name)}
+                                </span>
+                              ) : null}
+                            </div>
                             {item.description ? (
                               <span className="text-sm leading-6 text-[var(--muted)]">{item.description}</span>
                             ) : null}
@@ -320,7 +345,7 @@ export default async function CharacterDetailPage({ params, searchParams }: Char
                             )
                           ) : (
                             <span className="text-xs font-semibold uppercase tracking-[0.12em] text-[var(--color-ink-700)]">
-                              不可交易
+                              {isPlantingSeedName(item.name) ? "种植专用" : "不可交易"}
                             </span>
                           )}
                         </td>
@@ -455,7 +480,14 @@ export default async function CharacterDetailPage({ params, searchParams }: Char
                         <tr key={item.id}>
                           <td>
                             <div className="flex flex-col gap-1">
-                              <span className="font-semibold text-[var(--color-ink-900)]">{item.name}</span>
+                              <div className="flex flex-wrap items-center gap-2">
+                                <span className="font-semibold text-[var(--color-ink-900)]">{item.name}</span>
+                                {getPlantingTag(item.name) ? (
+                                  <span className="rounded-full border border-[rgba(127,92,47,0.18)] bg-[rgba(127,92,47,0.08)] px-2.5 py-0.5 text-[10px] font-semibold uppercase tracking-[0.14em] text-[var(--accent-strong)]">
+                                    {getPlantingTag(item.name)}
+                                  </span>
+                                ) : null}
+                              </div>
                               {item.description ? (
                                 <span className="text-sm leading-6 text-[var(--muted)]">{item.description}</span>
                               ) : null}

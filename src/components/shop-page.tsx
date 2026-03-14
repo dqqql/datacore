@@ -135,7 +135,17 @@ export function ShopPage({
               {items.length > 0 ? (
                 items.map((item) => (
                   <tr key={item.id}>
-                    <td>{item.category}</td>
+                    <td>
+                      <span
+                        className={`inline-flex rounded-full px-3 py-1 text-xs font-semibold uppercase tracking-[0.14em] ${
+                          item.category === "种植"
+                            ? "border border-[rgba(53,95,59,0.24)] bg-[rgba(53,95,59,0.08)] text-[var(--success)]"
+                            : "border border-[var(--border-soft)] bg-[rgba(255,250,241,0.82)] text-[var(--color-ink-700)]"
+                        }`}
+                      >
+                        {item.category}
+                      </span>
+                    </td>
                     <td>
                       <div className="flex flex-col gap-1">
                         <span className="font-semibold text-[var(--color-ink-900)]">{item.name}</span>

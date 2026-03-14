@@ -25,29 +25,6 @@ function formatRole(role: "ADMIN" | "PLAYER") {
   return role === "ADMIN" ? "管理员" : "玩家";
 }
 
-function formatAuditValue(raw: string | null | undefined): string | undefined {
-  if (!raw) return undefined;
-  try {
-    const obj = JSON.parse(raw);
-    if (typeof obj === "object" && obj !== null) {
-      // Show only meaningful numeric/string fields
-      const parts: string[] = [];
-      if (obj.price !== undefined) parts.push(`价格 ${formatNumber(Number(obj.price))}`);
-      if (obj.gold !== undefined) parts.push(`金币 ${formatNumber(Number(obj.gold))}`);
-      if (obj.honor !== undefined) parts.push(`荣誉 ${formatNumber(Number(obj.honor))}`);
-      if (obj.reputation !== undefined) parts.push(`声望 ${formatNumber(Number(obj.reputation))}`);
-      if (obj.count !== undefined) parts.push(`数量 ${formatNumber(Number(obj.count))}`);
-      if (obj.quantity !== undefined) parts.push(`数量 ${formatNumber(Number(obj.quantity))}`);
-      if (obj.role === "buyer") parts.push("买家成交");
-      if (obj.role === "seller") parts.push("卖家成交");
-      return parts.length > 0 ? parts.join("，") : "[操作记录]";
-    }
-  } catch {
-    // not JSON, return as-is
-  }
-  return raw;
-}
-
 function formatAuditAction(action: string) {
   const labels: Record<string, string> = {
     CHARACTER_GOLD_UPDATED: "金币调整",
@@ -64,6 +41,9 @@ function formatAuditAction(action: string) {
     SHOP_PASSWORD_POOL_REFRESHED: "密码池刷新",
     CHARACTER_ARCHIVED: "角色归档",
     CHARACTER_RESTORED: "角色恢复",
+    PLANTING_SEED_PLANTED: "温室播种",
+    PLANTING_SEED_HARVESTED: "温室收获",
+    PLANTING_PLOT_EXPANDED: "温室扩容",
   };
   return labels[action] ?? action;
 }
