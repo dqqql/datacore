@@ -150,7 +150,9 @@ export function ShopPage({
                       <div className="flex flex-col gap-1">
                         <span className="font-semibold text-[var(--color-ink-900)]">{item.name}</span>
                         {item.description ? (
-                          <span className="text-sm leading-6 text-[var(--muted)]">{item.description}</span>
+                          <span className="mt-1 block max-h-[88px] w-full min-w-[12rem] max-w-[18rem] overflow-y-auto overflow-x-hidden break-words whitespace-pre-wrap rounded-xl border border-[var(--border-soft)] bg-[rgba(255,250,241,0.5)] p-2.5 text-xs leading-relaxed text-[var(--muted)] custom-scrollbar shadow-[inset_0_1px_0_rgba(255,255,255,0.6)]">
+                            {item.description}
+                          </span>
                         ) : null}
                         {item.importedSource ? (
                           <span className="text-xs font-semibold uppercase tracking-[0.12em] text-[var(--color-ink-700)]">
