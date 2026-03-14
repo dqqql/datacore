@@ -58,7 +58,6 @@ export default function PlantingClientBoard({
 }: PlantingClientBoardProps) {
   const router = useRouter();
   const [isPending, startTransition] = useTransition();
-  const [actionPassword, setActionPassword] = useState("");
   const [otp, setOtp] = useState("");
   const [selectedPlotIndex, setSelectedPlotIndex] = useState<number | null>(null);
   const [feedback, setFeedback] = useState<{ tone: "success" | "danger"; text: string } | null>(null);
@@ -90,7 +89,7 @@ export default function PlantingClientBoard({
     }
 
     runAction(async () => {
-      const result = await redeemPlotExpansionAction(nextOtp, actionPassword);
+      const result = await redeemPlotExpansionAction(nextOtp);
 
       if (result.ok) {
         setOtp("");
@@ -106,7 +105,7 @@ export default function PlantingClientBoard({
     }
 
     runAction(async () => {
-      const result = await plantSeedAction(selectedPlotIndex, element, actionPassword);
+      const result = await plantSeedAction(selectedPlotIndex, element);
 
       if (result.ok) {
         setSelectedPlotIndex(null);
@@ -117,7 +116,7 @@ export default function PlantingClientBoard({
   };
 
   const handleHarvest = (plotIndex: number) => {
-    runAction(() => harvestPlotAction(plotIndex, actionPassword));
+    runAction(() => harvestPlotAction(plotIndex));
   };
 
   return (
@@ -161,24 +160,6 @@ export default function PlantingClientBoard({
             </div>
           </div>
         ) : null}
-
-        <div className="mt-5 rounded-[20px] border border-[var(--border-soft)] bg-[rgba(255,250,241,0.84)] px-4 py-4">
-          <label className="field-label" htmlFor="planting-action-password">
-            当前账号密码
-          </label>
-          <input
-            id="planting-action-password"
-            type="password"
-            autoComplete="current-password"
-            value={actionPassword}
-            onChange={(event) => setActionPassword(event.target.value)}
-            className="focus-ring field-input mt-2"
-            placeholder="普通成员播种、收获和扩容前需要输入当前账号密码"
-          />
-          <p className="mt-2 text-sm leading-6 text-[var(--muted)]">
-            管理员账号可以忽略这项；普通成员本页所有写操作都会使用这里的密码。
-          </p>
-        </div>
       </article>
 
       <div className="grid gap-6 xl:grid-cols-[1.3fr_0.7fr]">
@@ -258,7 +239,7 @@ export default function PlantingClientBoard({
               <div>
                 <h3 className="section-title text-2xl font-semibold">地块扩容</h3>
                 <p className="mt-1 text-sm text-[var(--muted)]">
-                  使用密码池中的地契密码，可将基础 3 x 3 地块扩展到 4 x 4。
+                  使用密码池中的地契密码，可将基础 3 x 3 地块扩展到 4 x 4，管理员可直接执行扩容。
                 </p>
               </div>
             </div>

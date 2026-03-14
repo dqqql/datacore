@@ -17,7 +17,6 @@ const honorShopMessages = {
   invalidPurchase: "购买失败，请检查角色、商品与数量后重试。",
   unavailable: "该荣誉商品当前不可购买，请刷新页面后重试。",
   insufficientHonor: "当前账号荣誉值不足，无法完成此次购买。",
-  passwordInvalid: "请输入当前账号密码后再执行购买。",
   completed: "购买成功，荣誉商店物品已写入当前角色背包。",
 } as const;
 
@@ -44,8 +43,6 @@ export default async function HonorShopPage({ searchParams }: HonorShopPageProps
         ? honorShopMessages.unavailable
         : query.shopError === "insufficient-honor"
           ? honorShopMessages.insufficientHonor
-          : query.shopError === "password-invalid"
-            ? honorShopMessages.passwordInvalid
           : null;
 
   const shopSuccessMessage =
@@ -71,7 +68,6 @@ export default async function HonorShopPage({ searchParams }: HonorShopPageProps
         currentCharacter={currentCharacter ? { id: currentCharacter.id, name: currentCharacter.name } : null}
         errorMessage={shopErrorMessage}
         successMessage={shopSuccessMessage}
-        passwordGroup="honor-shop-page"
       />
     </AppShell>
   );

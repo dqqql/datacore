@@ -2,7 +2,7 @@
 
 import { PlantPlotStatus } from "@prisma/client";
 import { revalidatePath } from "next/cache";
-import { ActionPasswordError, requireActionPasswordValue, requirePlayerCharacter } from "@/lib/auth-helpers";
+import { requirePlayerCharacter } from "@/lib/auth-helpers";
 import {
   BASE_PLOT_COUNT,
   EXPANDED_PLOT_COUNT,
@@ -33,26 +33,34 @@ function revalidatePlantingPaths(characterId: string) {
   revalidatePath(`/characters/${characterId}`);
 }
 
-async function requireCurrentCharacter() {
+async function requireCurrentCharacterContext() {
   const context = await requirePlayerCharacter();
+  const character = context.currentCharacter;
 
-  if (!context.currentCharacter) {
+  if (!character) {
     throw new PlantingActionError("请先切换到一个可用角色，再进入种植系统。");
   }
 
-  return context.currentCharacter;
+  return {
+    ...context,
+    currentCharacter: character,
+  };
 }
 
-export async function redeemPlotExpansionAction(otpCode: string, password: string): Promise<PlantingActionResult> {
-  const parsed = redeemPlotExpansionSchema.safeParse({ otpCode });
-
-  if (!parsed.success) {
-    return { ok: false, error: "请输入有效的地契密码。" };
-  }
-
+export async function redeemPlotExpansionAction(otpCode: string): Promise<PlantingActionResult> {
   try {
-    await requireActionPasswordValue(password);
-    const character = await requireCurrentCharacter();
+    const context = await requireCurrentCharacterContext();
+    const character = context.currentCharacter;
+    const requiresOtp = context.session.user.role !== "ADMIN";
+
+    if (requiresOtp) {
+      const parsed = redeemPlotExpansionSchema.safeParse({ otpCode });
+
+      if (!parsed.success) {
+        return { ok: false, error: "请输入有效的地契密码。" };
+      }
+    }
+
     await ensurePlantingPlots(character.id);
 
     await prisma.$transaction(async (tx) => {
@@ -69,17 +77,19 @@ export async function redeemPlotExpansionAction(otpCode: string, password: strin
         throw new PlantingActionError("当前角色的地块已经扩容完成。");
       }
 
-      const otp = await tx.oneTimePassword.findFirst({
-        where: {
-          code: parsed.data.otpCode,
-          isUsed: false,
-          pool: {
-            isActive: true,
-          },
-        },
-      });
+      const otp = requiresOtp
+        ? await tx.oneTimePassword.findFirst({
+            where: {
+              code: otpCode.trim(),
+              isUsed: false,
+              pool: {
+                isActive: true,
+              },
+            },
+          })
+        : null;
 
-      if (!otp) {
+      if (requiresOtp && !otp) {
         throw new PlantingActionError("地契密码无效，或已经被使用。");
       }
 
@@ -88,15 +98,17 @@ export async function redeemPlotExpansionAction(otpCode: string, password: strin
         (_, offset) => BASE_PLOT_COUNT + offset,
       );
 
-      await tx.oneTimePassword.update({
-        where: { id: otp.id },
-        data: {
-          isUsed: true,
-          usedAt: new Date(),
-          usedByCharacterId: character.id,
-          usageNote: "种植地块扩容至 4x4",
-        },
-      });
+      if (otp) {
+        await tx.oneTimePassword.update({
+          where: { id: otp.id },
+          data: {
+            isUsed: true,
+            usedAt: new Date(),
+            usedByCharacterId: character.id,
+            usageNote: "种植地块扩容至 4x4",
+          },
+        });
+      }
 
       await tx.plantPlot.createMany({
         data: expansionIndexes.map((index) => ({
@@ -113,9 +125,13 @@ export async function redeemPlotExpansionAction(otpCode: string, password: strin
           targetCharacterId: character.id,
           action: "PLANTING_PLOT_EXPANDED",
           entityType: "PlantPlot",
-          entityId: otp.id,
-          afterValue: JSON.stringify({ plotCount: EXPANDED_PLOT_COUNT, otpCode: parsed.data.otpCode }),
-          note: `使用地契密码扩容地块：${parsed.data.otpCode}`,
+          entityId: otp?.id ?? character.id,
+          afterValue: JSON.stringify({
+            plotCount: EXPANDED_PLOT_COUNT,
+            otpCode: otp?.code ?? null,
+            expandedBy: requiresOtp ? "otp" : "admin-direct",
+          }),
+          note: requiresOtp ? `使用地契密码扩容地块：${otpCode.trim()}` : "管理员直接扩容地块",
         },
       });
     });
@@ -123,10 +139,6 @@ export async function redeemPlotExpansionAction(otpCode: string, password: strin
     revalidatePlantingPaths(character.id);
     return { ok: true, message: "地块已扩容到 4 x 4，新的温室格位已解锁。" };
   } catch (error) {
-    if (error instanceof ActionPasswordError) {
-      return { ok: false, error: "请输入当前账号密码后再执行该操作。" };
-    }
-
     if (error instanceof PlantingActionError) {
       return { ok: false, error: error.message };
     }
@@ -135,11 +147,7 @@ export async function redeemPlotExpansionAction(otpCode: string, password: strin
   }
 }
 
-export async function plantSeedAction(
-  plotIndex: number,
-  element: string,
-  password: string,
-): Promise<PlantingActionResult> {
+export async function plantSeedAction(plotIndex: number, element: string): Promise<PlantingActionResult> {
   const parsed = plantSeedSchema.safeParse({ plotIndex, element });
 
   if (!parsed.success) {
@@ -147,8 +155,8 @@ export async function plantSeedAction(
   }
 
   try {
-    await requireActionPasswordValue(password);
-    const character = await requireCurrentCharacter();
+    const context = await requireCurrentCharacterContext();
+    const character = context.currentCharacter;
     await ensurePlantingPlots(character.id);
 
     await prisma.$transaction(async (tx) => {
@@ -247,10 +255,6 @@ export async function plantSeedAction(
     revalidatePlantingPaths(character.id);
     return { ok: true, message: "播种完成，温室已开始培养新的元素材料。" };
   } catch (error) {
-    if (error instanceof ActionPasswordError) {
-      return { ok: false, error: "请输入当前账号密码后再执行播种。" };
-    }
-
     if (error instanceof PlantingActionError) {
       return { ok: false, error: error.message };
     }
@@ -259,7 +263,7 @@ export async function plantSeedAction(
   }
 }
 
-export async function harvestPlotAction(plotIndex: number, password: string): Promise<PlantingActionResult> {
+export async function harvestPlotAction(plotIndex: number): Promise<PlantingActionResult> {
   const parsed = harvestPlotSchema.safeParse({ plotIndex });
 
   if (!parsed.success) {
@@ -267,8 +271,8 @@ export async function harvestPlotAction(plotIndex: number, password: string): Pr
   }
 
   try {
-    await requireActionPasswordValue(password);
-    const character = await requireCurrentCharacter();
+    const context = await requireCurrentCharacterContext();
+    const character = context.currentCharacter;
     await ensurePlantingPlots(character.id);
 
     await prisma.$transaction(async (tx) => {
@@ -360,10 +364,6 @@ export async function harvestPlotAction(plotIndex: number, password: string): Pr
     revalidatePlantingPaths(character.id);
     return { ok: true, message: "收获成功，材料已放入当前角色背包。" };
   } catch (error) {
-    if (error instanceof ActionPasswordError) {
-      return { ok: false, error: "请输入当前账号密码后再执行收获。" };
-    }
-
     if (error instanceof PlantingActionError) {
       return { ok: false, error: error.message };
     }

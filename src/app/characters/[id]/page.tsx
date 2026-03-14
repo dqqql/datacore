@@ -11,7 +11,6 @@ import {
   cancelMarketListingAction,
   createMarketListingAction,
 } from "@/app/market/actions";
-import { SharedActionPasswordField } from "@/components/shared-action-password-field";
 import { sellbackInventoryItemAction } from "@/app/shops/actions";
 import { ConfirmSubmitButton } from "@/components/confirm-submit-button";
 import { isPlantingMaterialName, isPlantingSeedName } from "@/lib/planting";
@@ -37,7 +36,6 @@ const inventoryMessages = {
   duplicate: "该角色背包中已存在同名物品，请更换名称后再存入。",
   deleteInvalid: "删除失败，请刷新页面后重试。",
   deleteUnavailable: "该私设物品当前无法删除，请先确认它未在寄售中。",
-  passwordInvalid: "请输入当前账号密码后再执行该角色的写操作。",
   created: "战利品/私设物品已妥善存入当前角色行囊。",
   deleted: "私设物品已从角色背包和数据库中删除。",
 } as const;
@@ -46,7 +44,6 @@ const sellbackMessages = {
   invalid: "典当失败，请检查物品与数量后重试。",
   unavailable: "该物品当前不可典当给公会。",
   tooMany: "典当数量不能超过行囊中的现有数量。",
-  passwordInvalid: "请输入当前账号密码后再执行典当。",
   completed: "半价典当成功，返还金额已写回对应货币。",
 } as const;
 
@@ -54,7 +51,6 @@ const listingMessages = {
   invalid: "寄售或撤销失败，请刷新页面后重试。",
   unavailable: "该私设物品当前无法委托集市寄售。",
   cancelUnavailable: "该寄售当前无法撤销。",
-  passwordInvalid: "请输入当前账号密码后再执行寄售相关操作。",
   created: "私设物品已委托集市寄售。",
   cancelled: "寄售已撤销，物品已返回角色行囊并恢复可操作状态。",
 } as const;
@@ -141,8 +137,6 @@ export default async function CharacterDetailPage({ params, searchParams }: Char
           ? inventoryMessages.deleteInvalid
           : query.inventoryError === "private-item-delete-unavailable"
             ? inventoryMessages.deleteUnavailable
-            : query.inventoryError === "password-invalid"
-              ? inventoryMessages.passwordInvalid
             : null;
   const inventorySuccessMessage =
     query.inventorySuccess === "private-item-created"
@@ -157,8 +151,6 @@ export default async function CharacterDetailPage({ params, searchParams }: Char
         ? sellbackMessages.unavailable
         : query.sellbackError === "sellback-too-many"
           ? sellbackMessages.tooMany
-          : query.sellbackError === "password-invalid"
-            ? sellbackMessages.passwordInvalid
           : null;
   const sellbackSuccessMessage =
     query.sellbackSuccess === "sellback-completed" ? sellbackMessages.completed : null;
@@ -169,8 +161,6 @@ export default async function CharacterDetailPage({ params, searchParams }: Char
         ? listingMessages.unavailable
         : query.listingError === "cancel-unavailable"
           ? listingMessages.cancelUnavailable
-          : query.listingError === "password-invalid"
-            ? listingMessages.passwordInvalid
           : null;
   const listingSuccessMessage =
     query.listingSuccess === "listing-created"
@@ -196,17 +186,8 @@ export default async function CharacterDetailPage({ params, searchParams }: Char
             金币与声望允许玩家自行维护，但每次修改都会写入后台审计日志。
           </p>
 
-          <div className="mt-4 rounded-[20px] border border-[var(--border-soft)] bg-[rgba(255,250,241,0.84)] px-4 py-4">
-            <SharedActionPasswordField
-              group="character-detail"
-              compact
-              helperText="当前角色页的经济调整、寄售、删除、录入和典当都会使用这一个账号密码。管理员账号可忽略。"
-            />
-          </div>
-
           <form action={updateCharacterEconomyAction} className="mt-5 space-y-4">
             <input type="hidden" name="characterId" value={character.id} />
-            <input type="hidden" name="actionPassword" data-shared-password-group="character-detail" />
 
             <div className="space-y-2">
               <label className="field-label" htmlFor="gold">金币</label>
@@ -329,7 +310,6 @@ export default async function CharacterDetailPage({ params, searchParams }: Char
                               >
                                 <input type="hidden" name="characterId" value={character.id} />
                                 <input type="hidden" name="listingId" value={item.marketListing.id} />
-                                <input type="hidden" name="actionPassword" data-shared-password-group="character-detail" />
                                 <button
                                   type="submit"
                                   className="focus-ring btn-secondary btn-compact"
@@ -342,7 +322,6 @@ export default async function CharacterDetailPage({ params, searchParams }: Char
                                 <form action={createMarketListingAction}>
                                   <input type="hidden" name="characterId" value={character.id} />
                                   <input type="hidden" name="inventoryItemId" value={item.id} />
-                                  <input type="hidden" name="actionPassword" data-shared-password-group="character-detail" />
                                   <button
                                     type="submit"
                                     className="focus-ring btn-secondary btn-compact"
@@ -353,7 +332,6 @@ export default async function CharacterDetailPage({ params, searchParams }: Char
                                 <form action={deletePrivateItemAction}>
                                   <input type="hidden" name="characterId" value={character.id} />
                                   <input type="hidden" name="inventoryItemId" value={item.id} />
-                                  <input type="hidden" name="actionPassword" data-shared-password-group="character-detail" />
                                   <ConfirmSubmitButton
                                     className="focus-ring btn-secondary btn-compact"
                                     confirmTitle="确认删除私设物品"
@@ -393,7 +371,6 @@ export default async function CharacterDetailPage({ params, searchParams }: Char
 
             <form action={createPrivateItemAction} className="mt-5 space-y-4">
               <input type="hidden" name="characterId" value={character.id} />
-              <input type="hidden" name="actionPassword" data-shared-password-group="character-detail" />
 
               <div className="grid gap-4 md:grid-cols-2">
                 <div className="space-y-2 md:col-span-2">
@@ -526,7 +503,6 @@ export default async function CharacterDetailPage({ params, searchParams }: Char
                             >
                               <input type="hidden" name="characterId" value={character.id} />
                               <input type="hidden" name="inventoryItemId" value={item.id} />
-                              <input type="hidden" name="actionPassword" data-shared-password-group="character-detail" />
                               <input
                                 name="quantity"
                                 type="number"

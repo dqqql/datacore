@@ -5,7 +5,7 @@ import type { Prisma } from "@prisma/client";
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { prisma } from "@/lib/prisma";
-import { ActionPasswordError, requireActionPassword, requireAdminSession } from "@/lib/auth-helpers";
+import { requireAdminSession, requireSession } from "@/lib/auth-helpers";
 import {
   createPrivateItemSchema,
   createCharacterSchema,
@@ -26,18 +26,7 @@ function buildCharactersRedirect(key: string, value: string) {
 }
 
 export async function createCharacterAction(formData: FormData) {
-  let session;
-
-  try {
-    session = await requireActionPassword(formData);
-  } catch (error) {
-    if (error instanceof ActionPasswordError) {
-      redirect("/characters?characterError=password-invalid");
-    }
-
-    throw error;
-  }
-
+  const session = await requireSession();
   const parsed = createCharacterSchema.safeParse({
     name: formData.get("name"),
   });
@@ -66,18 +55,7 @@ export async function createCharacterAction(formData: FormData) {
 }
 
 export async function createFirstCharacterAction(formData: FormData) {
-  let session;
-
-  try {
-    session = await requireActionPassword(formData);
-  } catch (error) {
-    if (error instanceof ActionPasswordError) {
-      redirect("/bootstrap/character?error=password-invalid");
-    }
-
-    throw error;
-  }
-
+  const session = await requireSession();
   const parsed = createCharacterSchema.safeParse({
     name: formData.get("name"),
   });
@@ -105,18 +83,7 @@ export async function createFirstCharacterAction(formData: FormData) {
 }
 
 export async function selectCurrentCharacterAction(formData: FormData) {
-  let session;
-
-  try {
-    session = await requireActionPassword(formData);
-  } catch (error) {
-    if (error instanceof ActionPasswordError) {
-      redirect("/characters?characterError=password-invalid");
-    }
-
-    throw error;
-  }
-
+  const session = await requireSession();
   const parsed = selectCharacterSchema.safeParse({
     characterId: formData.get("characterId"),
   });
@@ -150,24 +117,7 @@ export async function selectCurrentCharacterAction(formData: FormData) {
 }
 
 export async function updateCharacterEconomyAction(formData: FormData) {
-  let session;
-
-  try {
-    session = await requireActionPassword(formData);
-  } catch (error) {
-    const fallbackCharacterId = String(formData.get("characterId") ?? "").trim();
-
-    if (error instanceof ActionPasswordError) {
-      if (fallbackCharacterId) {
-        redirect(buildCharacterDetailRedirect(fallbackCharacterId, "inventoryError", "password-invalid"));
-      }
-
-      redirect("/characters?characterError=password-invalid");
-    }
-
-    throw error;
-  }
-
+  const session = await requireSession();
   const parsed = updateCharacterEconomySchema.safeParse({
     characterId: formData.get("characterId"),
     gold: formData.get("gold"),
@@ -243,23 +193,8 @@ export async function updateCharacterEconomyAction(formData: FormData) {
 }
 
 export async function createPrivateItemAction(formData: FormData) {
-  let session;
+  const session = await requireSession();
   const fallbackCharacterId = String(formData.get("characterId") ?? "").trim();
-
-  try {
-    session = await requireActionPassword(formData);
-  } catch (error) {
-    if (error instanceof ActionPasswordError) {
-      if (fallbackCharacterId) {
-        redirect(buildCharacterDetailRedirect(fallbackCharacterId, "inventoryError", "password-invalid"));
-      }
-
-      redirect("/characters?characterError=password-invalid");
-    }
-
-    throw error;
-  }
-
   const parsed = createPrivateItemSchema.safeParse({
     characterId: formData.get("characterId"),
     name: formData.get("name"),
@@ -344,23 +279,8 @@ export async function createPrivateItemAction(formData: FormData) {
 }
 
 export async function deletePrivateItemAction(formData: FormData) {
-  let session;
+  const session = await requireSession();
   const fallbackCharacterId = String(formData.get("characterId") ?? "").trim();
-
-  try {
-    session = await requireActionPassword(formData);
-  } catch (error) {
-    if (error instanceof ActionPasswordError) {
-      if (fallbackCharacterId) {
-        redirect(buildCharacterDetailRedirect(fallbackCharacterId, "inventoryError", "password-invalid"));
-      }
-
-      redirect("/characters?characterError=password-invalid");
-    }
-
-    throw error;
-  }
-
   const parsed = deletePrivateItemSchema.safeParse({
     characterId: formData.get("characterId"),
     inventoryItemId: formData.get("inventoryItemId"),
@@ -430,19 +350,8 @@ export async function deletePrivateItemAction(formData: FormData) {
 }
 
 export async function archiveCharacterAction(formData: FormData) {
-  let session;
+  const session = await requireSession();
   const redirectPath = String(formData.get("redirectPath") ?? "").trim();
-
-  try {
-    session = await requireActionPassword(formData);
-  } catch (error) {
-    if (error instanceof ActionPasswordError) {
-      redirect(buildCharactersRedirect("characterError", "password-invalid"));
-    }
-
-    throw error;
-  }
-
   const parsed = selectCharacterSchema.safeParse({
     characterId: formData.get("characterId"),
   });

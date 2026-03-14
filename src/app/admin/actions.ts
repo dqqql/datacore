@@ -1,9 +1,10 @@
 "use server";
 
 import { randomInt } from "crypto";
+import type { Prisma } from "@prisma/client";
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
-import { requireAdminSession } from "@/lib/auth-helpers";
+import { requireAdminSession, requireSession } from "@/lib/auth-helpers";
 import { prisma } from "@/lib/prisma";
 import {
   adjustUserHonorSchema,
@@ -17,9 +18,7 @@ function buildRedirect(pathname: string, key: string, value: string) {
   return `${pathname}?${searchParams.toString()}`;
 }
 
-function buildAdminShopsRedirect(
-  params: Record<string, string | null | undefined>,
-) {
+function buildAdminShopsRedirect(params: Record<string, string | null | undefined>) {
   const searchParams = new URLSearchParams();
 
   for (const [key, value] of Object.entries(params)) {
@@ -58,6 +57,12 @@ function getShopPathFromSlug(shopSlug: string) {
   return "/shops/guild";
 }
 
+class AdminShopActionError extends Error {
+  constructor(public readonly code: string) {
+    super(code);
+  }
+}
+
 function snapshotShopItem(item: {
   shopId: string;
   name: string;
@@ -77,6 +82,50 @@ function snapshotShopItem(item: {
     importedSource: item.importedSource,
     sortOrder: item.sortOrder,
     isActive: item.isActive,
+  };
+}
+
+async function consumeOneTimePassword(tx: Prisma.TransactionClient, code: string) {
+  const password = await tx.oneTimePassword.findFirst({
+    where: {
+      code,
+      isUsed: false,
+      pool: {
+        isActive: true,
+      },
+    },
+    select: {
+      id: true,
+      poolId: true,
+    },
+  });
+
+  if (!password) {
+    throw new AdminShopActionError("invalid-otp");
+  }
+
+  const consumed = await tx.oneTimePassword.updateMany({
+    where: {
+      id: password.id,
+      isUsed: false,
+      poolId: password.poolId,
+    },
+    data: {
+      isUsed: true,
+      usedAt: new Date(),
+    },
+  });
+
+  if (consumed.count !== 1) {
+    throw new AdminShopActionError("invalid-otp");
+  }
+}
+
+async function requireShopMaintenanceAccess() {
+  const session = await requireSession();
+  return {
+    session,
+    requiresOtp: session.user.role !== "ADMIN",
   };
 }
 
@@ -184,8 +233,9 @@ export async function refreshPasswordPoolAction() {
 }
 
 export async function createShopItemAction(formData: FormData) {
-  const session = await requireAdminSession();
+  const { session, requiresOtp } = await requireShopMaintenanceAccess();
   const returnState = readAdminShopReturnState(formData);
+  const otpCode = String(formData.get("otpCode") ?? "").trim();
   const parsed = createShopItemSchema.safeParse({
     shopId: formData.get("shopId"),
     name: formData.get("name"),
@@ -223,33 +273,58 @@ export async function createShopItemAction(formData: FormData) {
     );
   }
 
-  await prisma.$transaction(async (tx) => {
-    const createdItem = await tx.shopItem.create({
-      data: {
-        shopId: shop.id,
-        name: parsed.data.name,
-        description: parsed.data.description,
-        category: parsed.data.category,
-        price: parsed.data.price,
-        importedSource: parsed.data.importedSource,
-        sortOrder: parsed.data.sortOrder,
-        isActive: true,
-      },
-    });
+  try {
+    await prisma.$transaction(async (tx) => {
+      if (requiresOtp) {
+        if (!otpCode) {
+          throw new AdminShopActionError("invalid-otp");
+        }
 
-    await tx.auditLog.create({
-      data: {
-        actorUserId: session.user.id,
-        targetUserId: session.user.id,
-        action: "SHOP_ITEM_UPDATED",
-        entityType: "ShopItem",
-        entityId: createdItem.id,
-        beforeValue: null,
-        afterValue: JSON.stringify(snapshotShopItem(createdItem)),
-        note: `新建商店条目：${createdItem.name}（${shop.name}）`,
-      },
+        await consumeOneTimePassword(tx, otpCode);
+      }
+
+      const createdItem = await tx.shopItem.create({
+        data: {
+          shopId: shop.id,
+          name: parsed.data.name,
+          description: parsed.data.description,
+          category: parsed.data.category,
+          price: parsed.data.price,
+          importedSource: parsed.data.importedSource,
+          sortOrder: parsed.data.sortOrder,
+          isActive: true,
+        },
+      });
+
+      await tx.auditLog.create({
+        data: {
+          actorUserId: session.user.id,
+          targetUserId: session.user.id,
+          action: "SHOP_ITEM_UPDATED",
+          entityType: "ShopItem",
+          entityId: createdItem.id,
+          beforeValue: null,
+          afterValue: JSON.stringify(snapshotShopItem(createdItem)),
+          note: requiresOtp
+            ? `成员新建商店条目：${createdItem.name}（${shop.name}）`
+            : `管理员新建商店条目：${createdItem.name}（${shop.name}）`,
+        },
+      });
     });
-  });
+  } catch (error) {
+    if (error instanceof AdminShopActionError && error.code === "invalid-otp") {
+      redirect(
+        buildAdminShopsRedirect({
+          shopError: "invalid-otp",
+          page: returnState.page,
+          mode: "create",
+          shopId: returnState.shopId ?? shop.id,
+        }),
+      );
+    }
+
+    throw error;
+  }
 
   revalidateShopPaths(shop.slug);
   redirect(
@@ -261,8 +336,9 @@ export async function createShopItemAction(formData: FormData) {
 }
 
 export async function updateShopItemAction(formData: FormData) {
-  const session = await requireAdminSession();
+  const { session, requiresOtp } = await requireShopMaintenanceAccess();
   const returnState = readAdminShopReturnState(formData);
+  const otpCode = String(formData.get("otpCode") ?? "").trim();
   const parsed = updateShopItemSchema.safeParse({
     shopItemId: formData.get("shopItemId"),
     name: formData.get("name"),
@@ -310,33 +386,58 @@ export async function updateShopItemAction(formData: FormData) {
 
   const beforeSnapshot = snapshotShopItem(existingItem);
 
-  await prisma.$transaction(async (tx) => {
-    const updatedItem = await tx.shopItem.update({
-      where: { id: existingItem.id },
-      data: {
-        name: parsed.data.name,
-        description: parsed.data.description,
-        category: parsed.data.category,
-        price: parsed.data.price,
-        importedSource: parsed.data.importedSource,
-        sortOrder: parsed.data.sortOrder,
-        isActive: parsed.data.isActive,
-      },
-    });
+  try {
+    await prisma.$transaction(async (tx) => {
+      if (requiresOtp) {
+        if (!otpCode) {
+          throw new AdminShopActionError("invalid-otp");
+        }
 
-    await tx.auditLog.create({
-      data: {
-        actorUserId: session.user.id,
-        targetUserId: session.user.id,
-        action: "SHOP_ITEM_UPDATED",
-        entityType: "ShopItem",
-        entityId: updatedItem.id,
-        beforeValue: JSON.stringify(beforeSnapshot),
-        afterValue: JSON.stringify(snapshotShopItem(updatedItem)),
-        note: `维护商店条目：${updatedItem.name}（${existingItem.shop.name}）`,
-      },
+        await consumeOneTimePassword(tx, otpCode);
+      }
+
+      const updatedItem = await tx.shopItem.update({
+        where: { id: existingItem.id },
+        data: {
+          name: parsed.data.name,
+          description: parsed.data.description,
+          category: parsed.data.category,
+          price: parsed.data.price,
+          importedSource: parsed.data.importedSource,
+          sortOrder: parsed.data.sortOrder,
+          isActive: parsed.data.isActive,
+        },
+      });
+
+      await tx.auditLog.create({
+        data: {
+          actorUserId: session.user.id,
+          targetUserId: session.user.id,
+          action: "SHOP_ITEM_UPDATED",
+          entityType: "ShopItem",
+          entityId: updatedItem.id,
+          beforeValue: JSON.stringify(beforeSnapshot),
+          afterValue: JSON.stringify(snapshotShopItem(updatedItem)),
+          note: requiresOtp
+            ? `成员维护商店条目：${updatedItem.name}（${existingItem.shop.name}）`
+            : `管理员维护商店条目：${updatedItem.name}（${existingItem.shop.name}）`,
+        },
+      });
     });
-  });
+  } catch (error) {
+    if (error instanceof AdminShopActionError && error.code === "invalid-otp") {
+      redirect(
+        buildAdminShopsRedirect({
+          shopError: "invalid-otp",
+          page: returnState.page,
+          mode: "edit",
+          itemId: returnState.itemId ?? existingItem.id,
+        }),
+      );
+    }
+
+    throw error;
+  }
 
   revalidateShopPaths(existingItem.shop.slug);
   redirect(

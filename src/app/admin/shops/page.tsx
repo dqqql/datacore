@@ -1,7 +1,7 @@
 import Link from "next/link";
 import { AppShell } from "@/components/app-shell";
 import { createShopItemAction, updateShopItemAction } from "@/app/admin/actions";
-import { requireAdminSession } from "@/lib/auth-helpers";
+import { requireSession } from "@/lib/auth-helpers";
 import { ensureDefaultShops } from "@/lib/bootstrap-shops";
 import { prisma } from "@/lib/prisma";
 
@@ -21,7 +21,8 @@ type AdminShopsPageProps = {
 const PAGE_SIZE = 10;
 
 const shopMessages = {
-  invalid: "商品保存失败，请检查名称、分类、价格与排序后重试。",
+  invalid: "商品保存失败，请检查名称、分类、价格和排序后重试。",
+  invalidOtp: "一次性密码无效、已使用，或当前批次已失效。",
   shopNotFound: "目标商店不存在，请刷新页面后重试。",
   itemNotFound: "目标商品不存在，请刷新页面后重试。",
   created: "商店条目已创建，并已写入审计日志。",
@@ -56,7 +57,8 @@ function buildAdminShopsHref(params: Record<string, string | number | null | und
 }
 
 export default async function AdminShopsPage({ searchParams }: AdminShopsPageProps) {
-  await requireAdminSession();
+  const session = await requireSession();
+  const needsOtp = session.user.role !== "ADMIN";
   await ensureDefaultShops();
   const query = await searchParams;
 
@@ -94,7 +96,9 @@ export default async function AdminShopsPage({ searchParams }: AdminShopsPagePro
   const shopErrorMessage =
     query.shopError === "invalid-shop-item"
       ? shopMessages.invalid
-      : query.shopError === "shop-not-found"
+      : query.shopError === "invalid-otp"
+        ? shopMessages.invalidOtp
+        : query.shopError === "shop-not-found"
           ? shopMessages.shopNotFound
           : query.shopError === "shop-item-not-found"
             ? shopMessages.itemNotFound
@@ -121,7 +125,7 @@ export default async function AdminShopsPage({ searchParams }: AdminShopsPagePro
     <AppShell
       title="公共商店管理"
       badge="商店维护"
-      description="后台改为单表格维护商品。点击商品即可编辑，新增条目通过弹出表单完成。管理员操作不再要求输入一次性密码。"
+      description="所有已登录账号都可以维护商店条目。普通成员保存时需要输入 OTP，管理员可直接新增、编辑和启停商品。"
     >
       <section className="grid gap-6">
         <article className="panel rounded-[28px] p-6">
@@ -140,8 +144,12 @@ export default async function AdminShopsPage({ searchParams }: AdminShopsPagePro
             </div>
             <div className="metric-card">
               <p>保存规则</p>
-              <p className="metric-value">直改</p>
-              <p className="metric-detail">管理员新增、编辑、启停商品都无需再输入 OTP。</p>
+              <p className="metric-value">{needsOtp ? "OTP" : "直改"}</p>
+              <p className="metric-detail">
+                {needsOtp
+                  ? "当前账号为普通成员，新增和编辑都需要输入一次性密码。"
+                  : "当前账号为管理员，本页所有维护动作都无需输入 OTP。"}
+              </p>
             </div>
           </div>
 
@@ -388,6 +396,27 @@ export default async function AdminShopsPage({ searchParams }: AdminShopsPagePro
                     placeholder="可选。补充用途、来源或限制说明。"
                   />
                 </div>
+
+                {needsOtp ? (
+                  <div className="space-y-2 md:col-span-2">
+                    <label className="field-label" htmlFor="create-item-otp">
+                      一次性密码
+                    </label>
+                    <input
+                      id="create-item-otp"
+                      name="otpCode"
+                      type="text"
+                      required
+                      maxLength={120}
+                      className="focus-ring field-input"
+                      placeholder="输入本次创建需消耗的 OTP"
+                    />
+                  </div>
+                ) : (
+                  <div className="rounded-[20px] border border-[var(--border-soft)] bg-[rgba(255,250,241,0.82)] px-4 py-3 text-sm leading-6 text-[var(--muted)] md:col-span-2">
+                    当前为管理员账号，本次创建无需输入 OTP。
+                  </div>
+                )}
               </div>
 
               <div className="flex items-center justify-end gap-3 border-t border-[var(--border-soft)] pt-4">
@@ -533,6 +562,27 @@ export default async function AdminShopsPage({ searchParams }: AdminShopsPagePro
                     className="focus-ring field-textarea"
                   />
                 </div>
+
+                {needsOtp ? (
+                  <div className="space-y-2 md:col-span-2">
+                    <label className="field-label" htmlFor="edit-item-otp">
+                      一次性密码
+                    </label>
+                    <input
+                      id="edit-item-otp"
+                      name="otpCode"
+                      type="text"
+                      required
+                      maxLength={120}
+                      className="focus-ring field-input"
+                      placeholder="输入本次修改需消耗的 OTP"
+                    />
+                  </div>
+                ) : (
+                  <div className="rounded-[20px] border border-[var(--border-soft)] bg-[rgba(255,250,241,0.82)] px-4 py-3 text-sm leading-6 text-[var(--muted)] md:col-span-2">
+                    当前为管理员账号，本次修改无需输入 OTP。
+                  </div>
+                )}
               </div>
 
               <div className="flex items-center justify-end gap-3 border-t border-[var(--border-soft)] pt-4">

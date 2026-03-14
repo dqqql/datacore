@@ -1,25 +1,14 @@
 import { redirect } from "next/navigation";
 import { AppShell } from "@/components/app-shell";
 import { createFirstCharacterAction } from "@/app/characters/actions";
-import { SharedActionPasswordField } from "@/components/shared-action-password-field";
 import { getUserContext } from "@/lib/auth-helpers";
 
-type BootstrapCharacterPageProps = {
-  searchParams: Promise<{
-    error?: string;
-  }>;
-};
-
-export default async function BootstrapCharacterPage({ searchParams }: BootstrapCharacterPageProps) {
+export default async function BootstrapCharacterPage() {
   const context = await getUserContext();
-  const query = await searchParams;
 
   if (context.characters.length > 0) {
     redirect("/dashboard");
   }
-
-  const passwordErrorMessage =
-    query.error === "password-invalid" ? "请输入当前账号密码后再创建首个角色。" : null;
 
   return (
     <AppShell
@@ -64,12 +53,6 @@ export default async function BootstrapCharacterPage({ searchParams }: Bootstrap
               </h3>
             </div>
 
-            {passwordErrorMessage ? (
-              <div className="status-message mb-4" data-tone="danger">
-                {passwordErrorMessage}
-              </div>
-            ) : null}
-
             <form action={createFirstCharacterAction} className="space-y-5">
               <div className="space-y-2">
                 <label className="block text-sm font-semibold text-[var(--color-ink-700)]" htmlFor="name">
@@ -85,12 +68,6 @@ export default async function BootstrapCharacterPage({ searchParams }: Bootstrap
                   placeholder="例如：银烛学徒"
                 />
               </div>
-
-              <SharedActionPasswordField
-                group="bootstrap-character"
-                helperText="普通成员创建角色前需要输入当前账号密码；管理员账号可直接提交。"
-              />
-              <input type="hidden" name="actionPassword" data-shared-password-group="bootstrap-character" />
 
               <button
                 type="submit"

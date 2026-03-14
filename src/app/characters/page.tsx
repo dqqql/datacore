@@ -1,6 +1,5 @@
 import Link from "next/link";
 import { AppShell } from "@/components/app-shell";
-import { SharedActionPasswordField } from "@/components/shared-action-password-field";
 import {
   archiveCharacterAction,
   createCharacterAction,
@@ -21,7 +20,6 @@ const characterMessages = {
   invalid: "角色操作失败，请刷新页面后重试。",
   notFound: "目标角色不存在，或已不属于当前账号。",
   activeListings: "该角色仍有在售挂单，请先下架后再归档。",
-  passwordInvalid: "请输入当前账号密码后再执行角色相关操作。",
   archived: "角色已归档。如需恢复，请由管理员在后台执行恢复。",
 } as const;
 
@@ -32,12 +30,10 @@ export default async function CharactersPage({ searchParams }: CharactersPagePro
   const characterErrorMessage =
     query.characterError === "invalid-character-selection"
       ? characterMessages.invalid
-        : query.characterError === "character-not-found"
+      : query.characterError === "character-not-found"
         ? characterMessages.notFound
         : query.characterError === "character-has-active-listings"
           ? characterMessages.activeListings
-          : query.characterError === "password-invalid"
-            ? characterMessages.passwordInvalid
           : null;
 
   const characterSuccessMessage =
@@ -75,14 +71,6 @@ export default async function CharactersPage({ searchParams }: CharactersPagePro
             </div>
           ) : null}
 
-          <div className="mb-4 rounded-[20px] border border-[var(--border-soft)] bg-[rgba(255,250,241,0.84)] px-4 py-4">
-            <SharedActionPasswordField
-              group="characters-page"
-              compact
-              helperText="本页的新增、切换和归档都会使用这一个账号密码。管理员账号可忽略。"
-            />
-          </div>
-
           <div className="table-shell">
             <table>
               <thead>
@@ -114,7 +102,6 @@ export default async function CharactersPage({ searchParams }: CharactersPagePro
                       <div className="flex flex-nowrap gap-2 items-center">
                         <form action={selectCurrentCharacterAction}>
                           <input type="hidden" name="characterId" value={character.id} />
-                          <input type="hidden" name="actionPassword" data-shared-password-group="characters-page" />
                           <button
                             type="submit"
                             className="focus-ring btn-secondary btn-compact"
@@ -130,7 +117,6 @@ export default async function CharactersPage({ searchParams }: CharactersPagePro
                         </Link>
                         <form action={archiveCharacterAction}>
                           <input type="hidden" name="characterId" value={character.id} />
-                          <input type="hidden" name="actionPassword" data-shared-password-group="characters-page" />
                           <button
                             type="submit"
                             className="focus-ring btn-danger btn-compact"
@@ -168,8 +154,6 @@ export default async function CharactersPage({ searchParams }: CharactersPagePro
                 placeholder="例如：边境佣兵"
               />
             </div>
-
-            <input type="hidden" name="actionPassword" data-shared-password-group="characters-page" />
 
             <button
               type="submit"

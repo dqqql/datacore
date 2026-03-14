@@ -1,13 +1,6 @@
 import { redirect } from "next/navigation";
 import { auth } from "../../auth";
 import { prisma } from "@/lib/prisma";
-import { compare } from "bcryptjs";
-
-export class ActionPasswordError extends Error {
-  constructor(public readonly code: "missing" | "invalid") {
-    super(code);
-  }
-}
 
 export async function requireSession() {
   const session = await auth();
@@ -26,58 +19,6 @@ export async function requireAdminSession() {
     redirect("/dashboard");
   }
 
-  return session;
-}
-
-async function verifyActionPassword(sessionUserId: string, password: string) {
-  const user = await prisma.user.findUnique({
-    where: { id: sessionUserId },
-    select: {
-      passwordHash: true,
-      isActive: true,
-    },
-  });
-
-  if (!user || !user.isActive) {
-    throw new ActionPasswordError("invalid");
-  }
-
-  const isValid = await compare(password, user.passwordHash);
-
-  if (!isValid) {
-    throw new ActionPasswordError("invalid");
-  }
-}
-
-export async function requireActionPassword(formData: FormData) {
-  const session = await requireSession();
-
-  if (session.user.role === "ADMIN") {
-    return session;
-  }
-
-  const password = String(formData.get("actionPassword") ?? "");
-
-  if (!password.trim()) {
-    throw new ActionPasswordError("missing");
-  }
-
-  await verifyActionPassword(session.user.id, password);
-  return session;
-}
-
-export async function requireActionPasswordValue(password: string) {
-  const session = await requireSession();
-
-  if (session.user.role === "ADMIN") {
-    return session;
-  }
-
-  if (!password.trim()) {
-    throw new ActionPasswordError("missing");
-  }
-
-  await verifyActionPassword(session.user.id, password);
   return session;
 }
 

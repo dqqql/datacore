@@ -1,5 +1,4 @@
 import { purchaseShopItemAction } from "@/app/shops/actions";
-import { SharedActionPasswordField } from "@/components/shared-action-password-field";
 
 type ShopPageItem = {
   id: string;
@@ -27,7 +26,6 @@ type ShopPageProps = {
   } | null;
   errorMessage?: string | null;
   successMessage?: string | null;
-  passwordGroup: string;
 };
 
 function formatNumber(value: number) {
@@ -48,7 +46,6 @@ export function ShopPage({
   currentCharacter,
   errorMessage,
   successMessage,
-  passwordGroup,
 }: ShopPageProps) {
   const purchaseDisabled = !currentCharacter;
 
@@ -123,14 +120,6 @@ export function ShopPage({
           </span>
         </div>
 
-        <div className="mb-4 rounded-[20px] border border-[var(--border-soft)] bg-[rgba(255,250,241,0.84)] px-4 py-4">
-          <SharedActionPasswordField
-            group={passwordGroup}
-            compact
-            helperText="本页的购入操作都会使用这一个账号密码。管理员账号可忽略。"
-          />
-        </div>
-
         <div className="table-shell">
           <table>
             <thead>
@@ -176,7 +165,6 @@ export function ShopPage({
                         <input type="hidden" name="shopPath" value={shopPath} />
                         <input type="hidden" name="shopItemId" value={item.id} />
                         <input type="hidden" name="characterId" value={currentCharacter?.id ?? ""} />
-                        <input type="hidden" name="actionPassword" data-shared-password-group={passwordGroup} />
                         <input
                           name="quantity"
                           type="number"

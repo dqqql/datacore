@@ -17,7 +17,6 @@ const guildShopMessages = {
   invalidPurchase: "购买失败，请检查角色、商品与数量后重试。",
   unavailable: "该商品当前不可购买，请刷新页面后重试。",
   insufficientGold: "当前角色金币不足，无法完成此次购买。",
-  passwordInvalid: "请输入当前账号密码后再执行购买。",
   completed: "购买成功，公共物品已写入当前角色背包。",
 } as const;
 
@@ -44,8 +43,6 @@ export default async function GuildShopPage({ searchParams }: GuildShopPageProps
         ? guildShopMessages.unavailable
         : query.shopError === "insufficient-gold"
           ? guildShopMessages.insufficientGold
-          : query.shopError === "password-invalid"
-            ? guildShopMessages.passwordInvalid
           : null;
 
   const shopSuccessMessage =
@@ -71,7 +68,6 @@ export default async function GuildShopPage({ searchParams }: GuildShopPageProps
         currentCharacter={currentCharacter ? { id: currentCharacter.id, name: currentCharacter.name } : null}
         errorMessage={shopErrorMessage}
         successMessage={shopSuccessMessage}
-        passwordGroup="guild-shop-page"
       />
     </AppShell>
   );
