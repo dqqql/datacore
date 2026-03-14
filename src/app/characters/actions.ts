@@ -12,6 +12,7 @@ import {
   createUserSchema,
   deletePrivateItemSchema,
   selectCharacterSchema,
+  updateInventoryItemQuantitySchema,
   updateCharacterEconomySchema,
 } from "@/lib/schemas";
 
@@ -23,6 +24,55 @@ function buildCharacterDetailRedirect(characterId: string, key: string, value: s
 function buildCharactersRedirect(key: string, value: string) {
   const searchParams = new URLSearchParams({ [key]: value });
   return `/characters?${searchParams.toString()}`;
+}
+
+class CharacterInventoryActionError extends Error {
+  constructor(public readonly code: string) {
+    super(code);
+  }
+}
+
+async function consumeCharacterOtp(
+  tx: Prisma.TransactionClient,
+  code: string,
+  characterId: string,
+  usageNote: string,
+) {
+  const password = await tx.oneTimePassword.findFirst({
+    where: {
+      code,
+      isUsed: false,
+      pool: {
+        isActive: true,
+      },
+    },
+    select: {
+      id: true,
+      poolId: true,
+    },
+  });
+
+  if (!password) {
+    throw new CharacterInventoryActionError("invalid-otp");
+  }
+
+  const consumed = await tx.oneTimePassword.updateMany({
+    where: {
+      id: password.id,
+      poolId: password.poolId,
+      isUsed: false,
+    },
+    data: {
+      isUsed: true,
+      usedAt: new Date(),
+      usedByCharacterId: characterId,
+      usageNote,
+    },
+  });
+
+  if (consumed.count !== 1) {
+    throw new CharacterInventoryActionError("invalid-otp");
+  }
 }
 
 export async function createCharacterAction(formData: FormData) {
@@ -347,6 +397,112 @@ export async function deletePrivateItemAction(formData: FormData) {
   revalidatePath(`/characters/${parsed.data.characterId}`);
   revalidatePath("/admin/audit");
   redirect(buildCharacterDetailRedirect(parsed.data.characterId, "inventorySuccess", "private-item-deleted"));
+}
+
+export async function updateInventoryItemQuantityAction(formData: FormData) {
+  const session = await requireSession();
+  const fallbackCharacterId = String(formData.get("characterId") ?? "").trim();
+  const otpCode = String(formData.get("otpCode") ?? "").trim();
+  const requiresOtp = session.user.role !== "ADMIN";
+  const parsed = updateInventoryItemQuantitySchema.safeParse({
+    characterId: formData.get("characterId"),
+    inventoryItemId: formData.get("inventoryItemId"),
+    quantity: formData.get("quantity"),
+  });
+
+  if (!parsed.success) {
+    if (fallbackCharacterId) {
+      redirect(buildCharacterDetailRedirect(fallbackCharacterId, "inventoryError", "invalid-item-quantity-update"));
+    }
+
+    redirect("/characters?error=invalid-item-quantity-update");
+  }
+
+  const inventoryItem = await prisma.inventoryItem.findFirst({
+    where: {
+      id: parsed.data.inventoryItemId,
+      characterId: parsed.data.characterId,
+      character: {
+        userId: session.user.id,
+        status: "ACTIVE",
+      },
+    },
+  });
+
+  if (!inventoryItem || inventoryItem.isListed) {
+    redirect(buildCharacterDetailRedirect(parsed.data.characterId, "inventoryError", "item-quantity-update-unavailable"));
+  }
+
+  if (inventoryItem.quantity === parsed.data.quantity) {
+    redirect(buildCharacterDetailRedirect(parsed.data.characterId, "inventorySuccess", "item-quantity-updated"));
+  }
+
+  try {
+    await prisma.$transaction(async (tx) => {
+      if (requiresOtp) {
+        if (!otpCode) {
+          throw new CharacterInventoryActionError("invalid-otp");
+        }
+
+        await consumeCharacterOtp(tx, otpCode, parsed.data.characterId, `背包物品数量调整：${inventoryItem.name}`);
+      }
+
+      const updatedItem = await tx.inventoryItem.updateMany({
+        where: {
+          id: inventoryItem.id,
+          characterId: parsed.data.characterId,
+          isListed: false,
+          quantity: inventoryItem.quantity,
+        },
+        data: {
+          quantity: parsed.data.quantity,
+        },
+      });
+
+      if (updatedItem.count !== 1) {
+        throw new CharacterInventoryActionError("item-quantity-update-unavailable");
+      }
+
+      await tx.auditLog.create({
+        data: {
+          actorUserId: session.user.id,
+          targetUserId: session.user.id,
+          targetCharacterId: parsed.data.characterId,
+          action: "INVENTORY_ITEM_QUANTITY_UPDATED",
+          entityType: "InventoryItem",
+          entityId: inventoryItem.id,
+          beforeValue: JSON.stringify({
+            name: inventoryItem.name,
+            quantity: inventoryItem.quantity,
+            unitPrice: inventoryItem.unitPrice,
+          }),
+          afterValue: JSON.stringify({
+            name: inventoryItem.name,
+            quantity: parsed.data.quantity,
+            unitPrice: inventoryItem.unitPrice,
+          }),
+          note: `调整背包物品数量：${inventoryItem.name}`,
+        },
+      });
+    });
+  } catch (error) {
+    if (error instanceof CharacterInventoryActionError) {
+      if (error.code === "invalid-otp") {
+        redirect(buildCharacterDetailRedirect(parsed.data.characterId, "inventoryError", "invalid-item-quantity-otp"));
+      }
+
+      if (error.code === "item-quantity-update-unavailable") {
+        redirect(buildCharacterDetailRedirect(parsed.data.characterId, "inventoryError", "item-quantity-update-unavailable"));
+      }
+    }
+    throw error;
+  }
+
+  revalidatePath("/", "layout");
+  revalidatePath("/dashboard");
+  revalidatePath(`/characters/${parsed.data.characterId}`);
+  revalidatePath("/admin/audit");
+  redirect(buildCharacterDetailRedirect(parsed.data.characterId, "inventorySuccess", "item-quantity-updated"));
 }
 
 export async function archiveCharacterAction(formData: FormData) {

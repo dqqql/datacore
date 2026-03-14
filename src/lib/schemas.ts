@@ -47,6 +47,12 @@ export const deletePrivateItemSchema = z.object({
   inventoryItemId: z.string().trim().min(1),
 });
 
+export const updateInventoryItemQuantitySchema = z.object({
+  characterId: z.string().trim().min(1),
+  inventoryItemId: z.string().trim().min(1),
+  quantity: z.coerce.number().int().min(1, "数量至少为 1").max(9999, "数量不能超过 9999"),
+});
+
 export const purchaseShopItemSchema = z.object({
   characterId: z.string().trim().min(1),
   shopItemId: z.string().trim().min(1),

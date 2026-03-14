@@ -32,6 +32,7 @@ function formatAuditAction(action: string) {
     USER_HONOR_UPDATED: "荣誉调整",
     PRIVATE_ITEM_CREATED: "存放战利品",
     PRIVATE_ITEM_DELETED: "删除私设物品",
+    INVENTORY_ITEM_QUANTITY_UPDATED: "物品数量调整",
     MARKET_LISTED: "集市寄售",
     MARKET_CANCELLED: "撤销寄售",
     MARKET_PURCHASED: "集市成交",

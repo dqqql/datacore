@@ -1,7 +1,7 @@
 "use client";
 
 import { useFormStatus } from "react-dom";
-import { useState, useEffect, useRef, type ReactNode } from "react";
+import { useState, useRef, type ReactNode } from "react";
 import { Modal } from "./modal";
 
 type ConfirmSubmitButtonProps = {
@@ -23,13 +23,6 @@ export function ConfirmSubmitButton({
   const [isModalOpen, setIsModalOpen] = useState(false);
   const triggerRef = useRef<HTMLButtonElement>(null);
 
-  // Auto-close modal when submission starts
-  useEffect(() => {
-    if (pending) {
-      setIsModalOpen(false);
-    }
-  }, [pending]);
-
   const handleTrigger = (e: React.MouseEvent) => {
     if (confirmMessage) {
       e.preventDefault();
@@ -41,6 +34,7 @@ export function ConfirmSubmitButton({
     // Manually trigger the form submission since the modal button is portalled out of the form
     const form = triggerRef.current?.form;
     if (form) {
+      setIsModalOpen(false);
       form.requestSubmit();
     }
   };

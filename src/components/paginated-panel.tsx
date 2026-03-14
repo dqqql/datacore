@@ -36,7 +36,7 @@ export function PaginatedPanel({
   // Pad to pageSize so the card height is fixed
   const padded = [
     ...visible,
-    ...Array.from({ length: Math.max(0, pageSize - visible.length) }, (_, i) => null as null),
+    ...Array.from({ length: Math.max(0, pageSize - visible.length) }, () => null as null),
   ];
 
   return (

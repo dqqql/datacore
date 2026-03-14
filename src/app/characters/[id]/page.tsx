@@ -13,6 +13,7 @@ import {
 } from "@/app/market/actions";
 import { sellbackInventoryItemAction } from "@/app/shops/actions";
 import { ConfirmSubmitButton } from "@/components/confirm-submit-button";
+import { InventoryQuantityEditorButton } from "@/components/inventory-quantity-editor-button";
 import { isPlantingMaterialName, isPlantingSeedName } from "@/lib/planting";
 
 export const dynamic = "force-dynamic";
@@ -36,8 +37,12 @@ const inventoryMessages = {
   duplicate: "该角色背包中已存在同名物品，请更换名称后再存入。",
   deleteInvalid: "删除失败，请刷新页面后重试。",
   deleteUnavailable: "该私设物品当前无法删除，请先确认它未在寄售中。",
+  quantityInvalid: "数量修改失败，请输入大于等于 1 的正整数后重试。",
+  quantityOtpInvalid: "一次性密码无效、已使用，或当前批次已失效。",
+  quantityUnavailable: "该物品当前无法修改数量，请先确认它未在寄售中。",
   created: "战利品/私设物品已妥善存入当前角色行囊。",
   deleted: "私设物品已从角色背包和数据库中删除。",
+  quantityUpdated: "物品数量已保存。",
 } as const;
 
 const sellbackMessages = {
@@ -77,6 +82,7 @@ function formatAuditAction(action: string) {
     CHARACTER_REPUTATION_UPDATED: "声望调整",
     PRIVATE_ITEM_CREATED: "存放战利品",
     PRIVATE_ITEM_DELETED: "删除私设物品",
+    INVENTORY_ITEM_QUANTITY_UPDATED: "物品数量调整",
     MARKET_LISTED: "集市寄售",
     MARKET_CANCELLED: "撤销寄售",
     MARKET_PURCHASED: "集市入手",
@@ -97,7 +103,7 @@ function formatPrice(value: number) {
 export default async function CharacterDetailPage({ params, searchParams }: CharacterDetailPageProps) {
   const { id } = await params;
   const query = await searchParams;
-  const { user } = await requirePlayerCharacter();
+  const { session, user } = await requirePlayerCharacter();
 
   const character = await prisma.character.findFirst({
     where: {
@@ -133,16 +139,24 @@ export default async function CharacterDetailPage({ params, searchParams }: Char
       ? inventoryMessages.invalid
       : query.inventoryError === "duplicate-private-item-name"
         ? inventoryMessages.duplicate
-        : query.inventoryError === "invalid-private-item-delete"
-          ? inventoryMessages.deleteInvalid
-          : query.inventoryError === "private-item-delete-unavailable"
-            ? inventoryMessages.deleteUnavailable
+      : query.inventoryError === "invalid-private-item-delete"
+        ? inventoryMessages.deleteInvalid
+        : query.inventoryError === "private-item-delete-unavailable"
+          ? inventoryMessages.deleteUnavailable
+          : query.inventoryError === "invalid-item-quantity-update"
+            ? inventoryMessages.quantityInvalid
+            : query.inventoryError === "invalid-item-quantity-otp"
+              ? inventoryMessages.quantityOtpInvalid
+            : query.inventoryError === "item-quantity-update-unavailable"
+              ? inventoryMessages.quantityUnavailable
             : null;
   const inventorySuccessMessage =
     query.inventorySuccess === "private-item-created"
       ? inventoryMessages.created
       : query.inventorySuccess === "private-item-deleted"
         ? inventoryMessages.deleted
+        : query.inventorySuccess === "item-quantity-updated"
+          ? inventoryMessages.quantityUpdated
         : null;
   const sellbackErrorMessage =
     query.sellbackError === "invalid-sellback"
@@ -298,7 +312,16 @@ export default async function CharacterDetailPage({ params, searchParams }: Char
                           </div>
                         </td>
                         <td>{formatOwnershipType(item.ownershipType)}</td>
-                        <td className="numeric">{formatPrice(item.quantity)}</td>
+                        <td className="numeric">
+                          <InventoryQuantityEditorButton
+                            characterId={character.id}
+                            inventoryItemId={item.id}
+                            itemName={item.name}
+                            quantity={item.quantity}
+                            requiresOtp={session.user.role !== "ADMIN"}
+                            disabled={item.isListed}
+                          />
+                        </td>
                         <td className="numeric">{formatPrice(item.sourceShopItem?.price ?? item.unitPrice)}</td>
                         <td>{item.isListed ? "寄售中" : "行囊中"}</td>
                         <td>

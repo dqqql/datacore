@@ -11,6 +11,7 @@ function formatAuditAction(action: string) {
     USER_HONOR_UPDATED: "荣誉值调整",
     PRIVATE_ITEM_CREATED: "录入私人物品",
     PRIVATE_ITEM_DELETED: "删除私设物品",
+    INVENTORY_ITEM_QUANTITY_UPDATED: "物品数量调整",
     MARKET_LISTED: "市场上架",
     MARKET_CANCELLED: "市场下架",
     MARKET_PURCHASED: "市场成交",
