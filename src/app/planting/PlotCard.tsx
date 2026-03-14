@@ -12,6 +12,7 @@ import {
   Sprout,
   Timer,
 } from "lucide-react";
+import { plantingElementMeta } from "@/lib/planting";
 
 type PlotCardProps = {
   plot: {
@@ -75,6 +76,7 @@ export default function PlotCard({ plot, onPlant, onHarvest, disabled = false }:
   const isGrowing = plot.status === "GROWING";
   const isReady = plot.status === "READY";
   const ui = plot.seedElement ? ELEMENTS_UI[plot.seedElement] : null;
+  const elementLabel = plot.seedElement ? plantingElementMeta[plot.seedElement].label : null;
 
   useEffect(() => {
     if (!isGrowing || !plot.maturesAt) {
@@ -108,6 +110,12 @@ export default function PlotCard({ plot, onPlant, onHarvest, disabled = false }:
         {plot.index + 1} 号地
       </div>
 
+      {!isEmpty && elementLabel ? (
+        <div className="absolute right-3 top-3 rounded-full border border-[var(--card-border)] bg-white/75 px-2.5 py-1 text-[11px] font-semibold tracking-[0.14em] text-[var(--foreground)]">
+          {elementLabel} 元素
+        </div>
+      ) : null}
+
       {!isEmpty && ui ? (
         <ui.icon className={`absolute inset-0 m-auto h-3/4 w-3/4 opacity-[0.06] ${ui.color}`} />
       ) : null}
@@ -129,6 +137,9 @@ export default function PlotCard({ plot, onPlant, onHarvest, disabled = false }:
           <div className={`rounded-full p-4 shadow-sm ${ui.bg} ${ui.color}`}>
             <ui.icon size={36} />
           </div>
+          <p className="text-sm font-semibold tracking-[0.14em] text-[var(--foreground)]">
+            {elementLabel}系培育中
+          </p>
           <div className="rounded-full border border-[var(--card-border)] bg-white/85 px-3 py-1 text-sm font-medium text-[var(--foreground)] shadow-sm">
             <span className="inline-flex items-center gap-2">
               <Timer size={14} className="text-[var(--text-muted)]" />

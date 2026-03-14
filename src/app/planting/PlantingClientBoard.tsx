@@ -332,12 +332,12 @@ export default function PlantingClientBoard({
                       onClick={() => handlePlant(element)}
                       className="focus-ring rounded-[22px] border border-[var(--border-soft)] bg-[rgba(255,250,241,0.9)] px-4 py-4 text-left transition hover:border-[var(--border-strong)] hover:bg-[rgba(255,252,246,0.98)]"
                     >
-                      <div className="flex items-center justify-between gap-3">
-                        <div>
-                          <p className="text-base font-semibold text-[var(--color-ink-900)]">{meta.seedName}</p>
+                      <div className="flex flex-nowrap items-center justify-between gap-3">
+                        <div className="min-w-0 flex-1">
+                          <p className="truncate text-base font-semibold text-[var(--color-ink-900)]">{meta.seedName}</p>
                           <p className="mt-1 text-sm text-[var(--muted)]">播下后成熟为 {meta.materialName}</p>
                         </div>
-                        <span className="rounded-full bg-white/80 px-3 py-1 text-xs font-semibold text-[var(--accent-strong)]">
+                        <span className="shrink-0 whitespace-nowrap rounded-full bg-white/80 px-3 py-1 text-xs font-semibold text-[var(--accent-strong)]">
                           {inventory.seeds[element]} 枚
                         </span>
                       </div>
