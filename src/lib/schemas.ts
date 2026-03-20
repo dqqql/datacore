@@ -1,5 +1,6 @@
 import { z } from "zod";
 import { SeedElementType } from "@prisma/client";
+import { hasHonorPrecision } from "@/lib/honor";
 
 export const loginSchema = z.object({
   username: z.string().trim().min(1).max(40),
@@ -97,11 +98,24 @@ export const adjustUserHonorSchema = z.object({
   userId: z.string().trim().min(1),
   delta: z.coerce
     .number()
-    .int("荣誉值变动必须是整数")
     .min(-999999, "单次荣誉值变动不能小于 -999999")
     .max(999999, "单次荣誉值变动不能大于 999999")
+    .refine((value) => hasHonorPrecision(value), "荣誉值最多保留两位小数")
     .refine((value) => value !== 0, "荣誉值变动不能为 0"),
   reason: z.string().trim().min(1, "请填写调整原因").max(120, "原因不能超过 120 个字符"),
+});
+
+export const submitHonorAdjustmentRequestSchema = z.object({
+  targetHonor: z.coerce
+    .number()
+    .min(0, "目标荣誉值不能小于 0")
+    .max(999999, "目标荣誉值不能大于 999999")
+    .refine((value) => hasHonorPrecision(value), "荣誉值最多保留两位小数"),
+  reason: z.string().trim().min(1, "请填写调整原因").max(120, "原因不能超过 120 个字符"),
+});
+
+export const reviewHonorAdjustmentRequestSchema = z.object({
+  requestId: z.string().trim().min(1),
 });
 
 export const refreshPasswordPoolSchema = z.object({

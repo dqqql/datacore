@@ -5,11 +5,14 @@ import type { Prisma } from "@prisma/client";
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { requireAdminSession, requireSession } from "@/lib/auth-helpers";
+import { roundHonorValue } from "@/lib/honor";
 import { prisma } from "@/lib/prisma";
 import {
   adjustUserHonorSchema,
   createShopItemSchema,
+  reviewHonorAdjustmentRequestSchema,
   selectUserSchema,
+  submitHonorAdjustmentRequestSchema,
   updateShopItemSchema,
 } from "@/lib/schemas";
 
@@ -135,6 +138,16 @@ function revalidateShopPaths(shopSlug: string) {
   revalidatePath(getShopPathFromSlug(shopSlug));
 }
 
+function revalidateHonorRelatedPaths() {
+  revalidatePath("/", "layout");
+  revalidatePath("/admin/users");
+  revalidatePath("/admin/audit");
+  revalidatePath("/dashboard");
+  revalidatePath("/honor-tiers");
+  revalidatePath("/shops/honor");
+  revalidatePath("/characters");
+}
+
 export async function adjustUserHonorAction(formData: FormData) {
   const session = await requireAdminSession();
   const parsed = adjustUserHonorSchema.safeParse({
@@ -155,7 +168,7 @@ export async function adjustUserHonorAction(formData: FormData) {
     redirect(buildRedirect("/admin/users", "honorError", "user-not-found"));
   }
 
-  const nextHonor = targetUser.honor + parsed.data.delta;
+  const nextHonor = roundHonorValue(targetUser.honor + parsed.data.delta);
 
   if (nextHonor < 0) {
     redirect(buildRedirect("/admin/users", "honorError", "honor-below-zero"));
@@ -183,9 +196,183 @@ export async function adjustUserHonorAction(formData: FormData) {
     });
   });
 
-  revalidatePath("/admin/users");
-  revalidatePath("/admin/audit");
+  revalidateHonorRelatedPaths();
   redirect(buildRedirect("/admin/users", "honorSuccess", "honor-adjusted"));
+}
+
+export async function approveHonorAdjustmentRequestAction(formData: FormData) {
+  const session = await requireAdminSession();
+  const parsed = reviewHonorAdjustmentRequestSchema.safeParse({
+    requestId: formData.get("requestId"),
+  });
+
+  if (!parsed.success) {
+    redirect(buildRedirect("/admin/users", "honorReviewError", "invalid-request"));
+  }
+
+  const request = await prisma.honorAdjustmentRequest.findUnique({
+    where: { id: parsed.data.requestId },
+    include: {
+      user: {
+        select: {
+          id: true,
+          honor: true,
+        },
+      },
+    },
+  });
+
+  if (!request || request.status !== "PENDING") {
+    redirect(buildRedirect("/admin/users", "honorReviewError", "request-not-found"));
+  }
+
+  const nextHonor = roundHonorValue(request.requestedHonor);
+
+  if (nextHonor < 0) {
+    redirect(buildRedirect("/admin/users", "honorReviewError", "honor-below-zero"));
+  }
+
+  await prisma.$transaction(async (tx) => {
+    await tx.user.update({
+      where: { id: request.userId },
+      data: {
+        honor: nextHonor,
+      },
+    });
+
+    await tx.honorAdjustmentRequest.update({
+      where: { id: request.id },
+      data: {
+        status: "APPROVED",
+        reviewedAt: new Date(),
+        reviewedByUserId: session.user.id,
+      },
+    });
+
+    await tx.auditLog.create({
+      data: {
+        actorUserId: session.user.id,
+        targetUserId: request.userId,
+        action: "USER_HONOR_UPDATED",
+        entityType: "HonorAdjustmentRequest",
+        entityId: request.id,
+        beforeValue: String(request.user.honor),
+        afterValue: String(nextHonor),
+        note: `审核通过荣誉值申请：${request.currentHonor} -> ${request.requestedHonor}，原因：${request.reason}`,
+      },
+    });
+  });
+
+  revalidateHonorRelatedPaths();
+  redirect(buildRedirect("/admin/users", "honorReviewSuccess", "request-approved"));
+}
+
+export async function rejectHonorAdjustmentRequestAction(formData: FormData) {
+  const session = await requireAdminSession();
+  const parsed = reviewHonorAdjustmentRequestSchema.safeParse({
+    requestId: formData.get("requestId"),
+  });
+
+  if (!parsed.success) {
+    redirect(buildRedirect("/admin/users", "honorReviewError", "invalid-request"));
+  }
+
+  const request = await prisma.honorAdjustmentRequest.findUnique({
+    where: { id: parsed.data.requestId },
+    select: {
+      id: true,
+      status: true,
+    },
+  });
+
+  if (!request || request.status !== "PENDING") {
+    redirect(buildRedirect("/admin/users", "honorReviewError", "request-not-found"));
+  }
+
+  await prisma.honorAdjustmentRequest.update({
+    where: { id: request.id },
+    data: {
+      status: "REJECTED",
+      reviewedAt: new Date(),
+      reviewedByUserId: session.user.id,
+    },
+  });
+
+  revalidateHonorRelatedPaths();
+  redirect(buildRedirect("/admin/users", "honorReviewSuccess", "request-rejected"));
+}
+
+export async function submitHonorAdjustmentRequestAction(formData: FormData) {
+  const session = await requireSession();
+
+  if (session.user.role !== "PLAYER") {
+    redirect("/dashboard");
+  }
+
+  const redirectPath = String(formData.get("redirectPath") ?? "/characters").trim() || "/characters";
+  const parsed = submitHonorAdjustmentRequestSchema.safeParse({
+    targetHonor: formData.get("targetHonor"),
+    reason: formData.get("reason"),
+  });
+
+  if (!parsed.success) {
+    redirect(buildRedirect(redirectPath, "honorRequestError", "invalid-honor-request"));
+  }
+
+  const user = await prisma.user.findUnique({
+    where: { id: session.user.id },
+    select: {
+      id: true,
+      honor: true,
+    },
+  });
+
+  if (!user) {
+    redirect(buildRedirect(redirectPath, "honorRequestError", "user-not-found"));
+  }
+
+  const targetHonor = roundHonorValue(parsed.data.targetHonor);
+  const currentHonor = roundHonorValue(user.honor);
+
+  if (targetHonor === currentHonor) {
+    redirect(buildRedirect(redirectPath, "honorRequestError", "honor-request-no-change"));
+  }
+
+  const existingPendingRequest = await prisma.honorAdjustmentRequest.findFirst({
+    where: {
+      userId: user.id,
+      status: "PENDING",
+    },
+    orderBy: {
+      updatedAt: "desc",
+    },
+    select: {
+      id: true,
+    },
+  });
+
+  if (existingPendingRequest) {
+    await prisma.honorAdjustmentRequest.update({
+      where: { id: existingPendingRequest.id },
+      data: {
+        currentHonor,
+        requestedHonor: targetHonor,
+        reason: parsed.data.reason,
+      },
+    });
+  } else {
+    await prisma.honorAdjustmentRequest.create({
+      data: {
+        userId: user.id,
+        currentHonor,
+        requestedHonor: targetHonor,
+        reason: parsed.data.reason,
+      },
+    });
+  }
+
+  revalidateHonorRelatedPaths();
+  redirect(buildRedirect(redirectPath, "honorRequestSuccess", "honor-request-submitted"));
 }
 
 export async function refreshPasswordPoolAction() {

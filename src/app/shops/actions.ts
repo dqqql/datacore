@@ -3,6 +3,7 @@
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { requireSession } from "@/lib/auth-helpers";
+import { roundHonorValue } from "@/lib/honor";
 import { prisma } from "@/lib/prisma";
 import { purchaseShopItemSchema, sellbackInventoryItemSchema } from "@/lib/schemas";
 import { ensureDefaultShops } from "@/lib/bootstrap-shops";
@@ -121,6 +122,21 @@ export async function purchaseShopItemAction(formData: FormData) {
           throw new ShopActionError("insufficient-gold");
         }
       } else {
+        const latestUser = await tx.user.findUnique({
+          where: { id: user.id },
+          select: { honor: true },
+        });
+
+        if (!latestUser) {
+          throw new ShopActionError("purchase-unavailable");
+        }
+
+        const nextHonor = roundHonorValue(latestUser.honor - latestTotalCost);
+
+        if (nextHonor < 0) {
+          throw new ShopActionError("insufficient-honor");
+        }
+
         const updatedUser = await tx.user.updateMany({
           where: {
             id: user.id,
@@ -129,9 +145,7 @@ export async function purchaseShopItemAction(formData: FormData) {
             },
           },
           data: {
-            honor: {
-              decrement: latestTotalCost,
-            },
+            honor: nextHonor,
           },
         });
 
@@ -310,12 +324,19 @@ export async function sellbackInventoryItemAction(formData: FormData) {
           },
         });
       } else {
+        const latestUser = await tx.user.findUnique({
+          where: { id: session.user.id },
+          select: { honor: true },
+        });
+
+        if (!latestUser) {
+          throw new ShopActionError("sellback-unavailable");
+        }
+
         await tx.user.update({
           where: { id: session.user.id },
           data: {
-            honor: {
-              increment: refundTotal,
-            },
+            honor: roundHonorValue(latestUser.honor + refundTotal),
           },
         });
       }

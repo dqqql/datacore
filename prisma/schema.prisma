@@ -34,6 +34,12 @@ enum PlantPlotStatus {
   HARVESTED
 }
 
+enum HonorAdjustmentRequestStatus {
+  PENDING
+  APPROVED
+  REJECTED
+}
+
 enum SeedElementType {
   WOOD
   FIRE
@@ -81,11 +87,13 @@ model User {
   displayName       String              @unique
   passwordHash      String
   role              UserRole            @default(PLAYER)
-  honor             Int                 @default(0)
+  honor             Float               @default(0)
   isActive          Boolean             @default(true)
   currentCharacterId String?
   characters        Character[]
   currentCharacter  Character?          @relation("CurrentCharacter", fields: [currentCharacterId], references: [id], onDelete: SetNull)
+  honorAdjustmentRequests         HonorAdjustmentRequest[] @relation("HonorAdjustmentRequestApplicant")
+  reviewedHonorAdjustmentRequests HonorAdjustmentRequest[] @relation("HonorAdjustmentRequestReviewer")
   auditLogsAsActor  AuditLog[]          @relation("AuditActor")
   auditLogsAsTarget AuditLog[]          @relation("AuditTargetUser")
   passwordPools     OneTimePasswordPool[] @relation("PasswordPoolCreator")
@@ -249,4 +257,22 @@ model AuditLog {
   @@index([action, createdAt])
   @@index([targetCharacterId, createdAt])
   @@index([targetUserId, createdAt])
+}
+
+model HonorAdjustmentRequest {
+  id               String                       @id @default(cuid())
+  userId           String
+  requestedHonor   Float
+  currentHonor     Float
+  reason           String
+  status           HonorAdjustmentRequestStatus @default(PENDING)
+  reviewedByUserId String?
+  reviewedAt       DateTime?
+  user             User                         @relation("HonorAdjustmentRequestApplicant", fields: [userId], references: [id], onDelete: Cascade)
+  reviewedByUser   User?                        @relation("HonorAdjustmentRequestReviewer", fields: [reviewedByUserId], references: [id], onDelete: SetNull)
+  createdAt        DateTime                     @default(now())
+  updatedAt        DateTime                     @updatedAt
+
+  @@index([userId, status, updatedAt])
+  @@index([status, updatedAt])
 }

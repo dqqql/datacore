@@ -1,7 +1,9 @@
 import { notFound } from "next/navigation";
 import { AppShell } from "@/components/app-shell";
+import { submitHonorAdjustmentRequestAction } from "@/app/admin/actions";
 import { prisma } from "@/lib/prisma";
 import { requirePlayerCharacter } from "@/lib/auth-helpers";
+import { formatHonorValue } from "@/lib/honor";
 import {
   createPrivateItemAction,
   deletePrivateItemAction,
@@ -29,6 +31,8 @@ type CharacterDetailPageProps = {
     sellbackSuccess?: string;
     listingError?: string;
     listingSuccess?: string;
+    honorRequestError?: string;
+    honorRequestSuccess?: string;
   }>;
 };
 
@@ -58,6 +62,13 @@ const listingMessages = {
   cancelUnavailable: "该寄售当前无法撤销。",
   created: "私设物品已委托集市寄售。",
   cancelled: "寄售已撤销，物品已返回角色行囊并恢复可操作状态。",
+} as const;
+
+const honorRequestMessages = {
+  invalid: "荣誉值申请提交失败，请检查目标荣誉值与原因后重试。",
+  notFound: "当前账号不存在，请重新登录后再试。",
+  noChange: "目标荣誉值与当前账号荣誉值一致，无需重复提交。",
+  submitted: "荣誉值申请已提交，等待管理员审核通过后生效。",
 } as const;
 
 function formatOwnershipType(type: "PUBLIC" | "PRIVATE") {
@@ -134,6 +145,19 @@ export default async function CharacterDetailPage({ params, searchParams }: Char
     notFound();
   }
 
+  const pendingHonorRequest =
+    session.user.role === "PLAYER"
+      ? await prisma.honorAdjustmentRequest.findFirst({
+          where: {
+            userId: user.id,
+            status: "PENDING",
+          },
+          orderBy: {
+            updatedAt: "desc",
+          },
+        })
+      : null;
+
   const inventoryErrorMessage =
     query.inventoryError === "invalid-private-item"
       ? inventoryMessages.invalid
@@ -182,6 +206,16 @@ export default async function CharacterDetailPage({ params, searchParams }: Char
       : query.listingSuccess === "listing-cancelled"
         ? listingMessages.cancelled
         : null;
+  const honorRequestErrorMessage =
+    query.honorRequestError === "invalid-honor-request"
+      ? honorRequestMessages.invalid
+      : query.honorRequestError === "user-not-found"
+        ? honorRequestMessages.notFound
+        : query.honorRequestError === "honor-request-no-change"
+          ? honorRequestMessages.noChange
+          : null;
+  const honorRequestSuccessMessage =
+    query.honorRequestSuccess === "honor-request-submitted" ? honorRequestMessages.submitted : null;
 
   const publicInventoryItems = character.inventoryItems.filter(
     (item) => item.ownershipType === "PUBLIC" && !isPlantingSeedName(item.name),
@@ -197,7 +231,7 @@ export default async function CharacterDetailPage({ params, searchParams }: Char
         <article className="panel rounded-[28px] p-6">
           <h3 className="section-title text-2xl font-semibold">经济数据</h3>
           <p className="mt-2 text-sm leading-6 text-[var(--muted)]">
-            金币与声望允许玩家自行维护，但每次修改都会写入后台审计日志。
+            金币与声望允许玩家自行维护，荣誉值则以账号维度提交审核申请。所有修改都会写入后台审计日志。
           </p>
 
           <form action={updateCharacterEconomyAction} className="mt-5 space-y-4">
@@ -234,6 +268,97 @@ export default async function CharacterDetailPage({ params, searchParams }: Char
               保存经济数据
             </button>
           </form>
+
+          {session.user.role === "PLAYER" ? (
+            <div className="mt-6 border-t border-[var(--border-soft)] pt-6">
+              <div className="flex flex-col gap-2">
+                <h4 className="section-title text-xl font-semibold">账号荣誉值申请</h4>
+                <p className="text-sm leading-6 text-[var(--muted)]">
+                  当前位置放在金币修改区域下方。填写修改后的目标荣誉值并提交后，需要管理员在后台审核通过才会真正生效。
+                </p>
+              </div>
+
+              {honorRequestErrorMessage ? (
+                <div className="status-message mt-4" data-tone="danger">
+                  {honorRequestErrorMessage}
+                </div>
+              ) : null}
+
+              {honorRequestSuccessMessage ? (
+                <div className="status-message mt-4" data-tone="success">
+                  {honorRequestSuccessMessage}
+                </div>
+              ) : null}
+
+              {pendingHonorRequest ? (
+                <div className="mt-4 rounded-[20px] border border-[var(--border-soft)] bg-[rgba(255,250,241,0.82)] px-4 py-4 text-sm leading-6 text-[var(--muted)]">
+                  <p className="font-semibold text-[var(--color-ink-900)]">
+                    当前有一条待审核申请
+                  </p>
+                  <p className="mt-2">
+                    目标荣誉值：{formatHonorValue(pendingHonorRequest.requestedHonor)}，提交时间：
+                    {" "}
+                    {new Intl.DateTimeFormat("zh-CN", { dateStyle: "short", timeStyle: "short" }).format(
+                      pendingHonorRequest.updatedAt,
+                    )}
+                  </p>
+                  <p className="mt-1">申请原因：{pendingHonorRequest.reason}</p>
+                  <p className="mt-1">重新提交会覆盖这条待审核申请。</p>
+                </div>
+              ) : null}
+
+              <form action={submitHonorAdjustmentRequestAction} className="mt-5 space-y-4">
+                <input type="hidden" name="redirectPath" value={`/characters/${character.id}`} />
+
+                <div className="space-y-2">
+                  <label className="field-label" htmlFor="current-honor">当前账号荣誉值</label>
+                  <input
+                    id="current-honor"
+                    type="text"
+                    value={formatHonorValue(user.honor)}
+                    readOnly
+                    className="field-input cursor-not-allowed opacity-80"
+                  />
+                </div>
+
+                <div className="space-y-2">
+                  <label className="field-label" htmlFor="target-honor">申请修改后的荣誉值</label>
+                  <input
+                    id="target-honor"
+                    name="targetHonor"
+                    type="number"
+                    min={0}
+                    step="0.01"
+                    required
+                    defaultValue={pendingHonorRequest?.requestedHonor ?? user.honor}
+                    className="focus-ring field-input"
+                    placeholder="请输入审核通过后应生效的荣誉值"
+                  />
+                </div>
+
+                <div className="space-y-2">
+                  <label className="field-label" htmlFor="honor-request-reason">申请原因</label>
+                  <textarea
+                    id="honor-request-reason"
+                    name="reason"
+                    rows={3}
+                    required
+                    maxLength={120}
+                    defaultValue={pendingHonorRequest?.reason ?? ""}
+                    className="focus-ring field-textarea"
+                    placeholder="例如：完成活动结算后，需要将账号荣誉值修正为 12.5"
+                  />
+                </div>
+
+                <button
+                  type="submit"
+                  className="focus-ring btn-primary w-full"
+                >
+                  {pendingHonorRequest ? "更新待审核申请" : "提交荣誉值申请"}
+                </button>
+              </form>
+            </div>
+          ) : null}
         </article>
 
         <div className="space-y-6">

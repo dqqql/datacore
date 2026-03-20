@@ -1,7 +1,14 @@
 import { AppShell } from "@/components/app-shell";
-import { adjustUserHonorAction, deleteUserAction } from "@/app/admin/actions";
-import { createUserAction, restoreCharacterAction } from "@/app/characters/actions";
+import {
+  adjustUserHonorAction,
+  approveHonorAdjustmentRequestAction,
+  deleteUserAction,
+  rejectHonorAdjustmentRequestAction,
+} from "@/app/admin/actions";
+import { createUserAction } from "@/app/characters/actions";
+import { ArchivedCharactersRestoreDialog } from "@/components/archived-characters-restore-dialog";
 import { ConfirmSubmitButton } from "@/components/confirm-submit-button";
+import { formatHonorValue } from "@/lib/honor";
 import { prisma } from "@/lib/prisma";
 import { requireAdminSession } from "@/lib/auth-helpers";
 
@@ -11,6 +18,8 @@ type AdminUsersPageProps = {
   searchParams: Promise<{
     honorError?: string;
     honorSuccess?: string;
+    honorReviewError?: string;
+    honorReviewSuccess?: string;
     characterError?: string;
     characterSuccess?: string;
     error?: string;
@@ -24,6 +33,14 @@ const honorMessages = {
   notFound: "目标账号不存在，请刷新页面后重试。",
   belowZero: "本次调整会使荣誉值变为负数，系统已阻止。",
   success: "荣誉值调整完成，审计日志已同步记录。",
+} as const;
+
+const honorReviewMessages = {
+  invalid: "审核请求无效，请刷新页面后重试。",
+  notFound: "待审核申请不存在，可能已被处理。",
+  belowZero: "待审核目标值无效，系统已阻止本次处理。",
+  approved: "荣誉值申请已审核通过，账号荣誉值已自动更新。",
+  rejected: "荣誉值申请已驳回，不会对账号荣誉值生效。",
 } as const;
 
 const characterMessages = {
@@ -59,6 +76,20 @@ export default async function AdminUsersPage({ searchParams }: AdminUsersPagePro
       },
     },
   });
+  const pendingHonorRequests = await prisma.honorAdjustmentRequest.findMany({
+    where: {
+      status: "PENDING",
+    },
+    orderBy: [{ updatedAt: "desc" }],
+    include: {
+      user: {
+        select: {
+          displayName: true,
+          honor: true,
+        },
+      },
+    },
+  });
 
   const honorErrorMessage =
     query.honorError === "invalid-honor-adjustment"
@@ -70,6 +101,20 @@ export default async function AdminUsersPage({ searchParams }: AdminUsersPagePro
           : null;
 
   const honorSuccessMessage = query.honorSuccess === "honor-adjusted" ? honorMessages.success : null;
+  const honorReviewErrorMessage =
+    query.honorReviewError === "invalid-request"
+      ? honorReviewMessages.invalid
+      : query.honorReviewError === "request-not-found"
+        ? honorReviewMessages.notFound
+        : query.honorReviewError === "honor-below-zero"
+          ? honorReviewMessages.belowZero
+          : null;
+  const honorReviewSuccessMessage =
+    query.honorReviewSuccess === "request-approved"
+      ? honorReviewMessages.approved
+      : query.honorReviewSuccess === "request-rejected"
+        ? honorReviewMessages.rejected
+        : null;
   const characterErrorMessage =
     query.characterError === "invalid-character-selection"
       ? characterMessages.invalid
@@ -157,29 +202,13 @@ export default async function AdminUsersPage({ searchParams }: AdminUsersPagePro
                     <tr key={user.id}>
                       <td>{user.displayName}</td>
                       <td>{formatRole(user.role)}</td>
-                      <td className="numeric">{user.honor}</td>
+                      <td className="numeric">{formatHonorValue(user.honor)}</td>
                       <td className="numeric">{activeCharacters.length}</td>
                       <td>
-                        {archivedCharacters.length > 0 ? (
-                          <div className="flex flex-wrap gap-2">
-                            {archivedCharacters.map((character) => (
-                              <form key={character.id} action={restoreCharacterAction} className="flex flex-wrap gap-2">
-                                <input type="hidden" name="characterId" value={character.id} />
-                                <span className="rounded-full border border-[var(--border-soft)] bg-[rgba(255,250,241,0.95)] px-3 py-1 text-xs font-semibold text-[var(--color-ink-900)]">
-                                  {character.name}
-                                </span>
-                                <button
-                                  type="submit"
-                                  className="focus-ring btn-secondary btn-compact"
-                                >
-                                  恢复
-                                </button>
-                              </form>
-                            ))}
-                          </div>
-                        ) : (
-                          <span className="text-sm text-[var(--muted)]">无</span>
-                        )}
+                        <ArchivedCharactersRestoreDialog
+                          accountName={user.displayName}
+                          archivedCharacters={archivedCharacters}
+                        />
                       </td>
                       <td>
                         {user.role === "PLAYER" ? (
@@ -254,6 +283,90 @@ export default async function AdminUsersPage({ searchParams }: AdminUsersPagePro
           </form>
 
           <div className="mt-8 border-t border-[var(--border-soft)] pt-6">
+            <h3 className="section-title text-2xl font-semibold">荣誉值审核</h3>
+            <p className="mt-2 text-sm leading-6 text-[var(--muted)]">
+              普通账号提交的荣誉值目标会集中出现在这里。审核通过后，系统会自动把账号荣誉值更新为申请值。
+            </p>
+
+            {honorReviewErrorMessage ? (
+              <div className="status-message mt-4" data-tone="danger">
+                {honorReviewErrorMessage}
+              </div>
+            ) : null}
+
+            {honorReviewSuccessMessage ? (
+              <div className="status-message mt-4" data-tone="success">
+                {honorReviewSuccessMessage}
+              </div>
+            ) : null}
+
+            <div className="mt-5 space-y-3">
+              {pendingHonorRequests.length > 0 ? (
+                pendingHonorRequests.map((request) => {
+                  const delta = request.requestedHonor - request.currentHonor;
+
+                  return (
+                    <div
+                      key={request.id}
+                      className="rounded-[24px] border border-[var(--border-soft)] bg-[rgba(255,250,241,0.82)] p-4"
+                    >
+                      <div className="flex flex-col gap-2">
+                        <div className="flex flex-wrap items-center justify-between gap-3">
+                          <div>
+                            <p className="font-semibold text-[var(--color-ink-900)]">{request.user.displayName}</p>
+                            <p className="text-sm leading-6 text-[var(--muted)]">
+                              当前荣誉值 {formatHonorValue(request.user.honor)}，申请改为 {formatHonorValue(request.requestedHonor)}
+                            </p>
+                          </div>
+                          <span className="rounded-full border border-[var(--border-soft)] bg-white/80 px-3 py-1 text-xs font-semibold text-[var(--color-ink-900)]">
+                            {delta >= 0 ? `+${formatHonorValue(delta)}` : formatHonorValue(delta)}
+                          </span>
+                        </div>
+
+                        <p className="text-sm leading-6 text-[var(--muted)]">
+                          申请原因：{request.reason}
+                        </p>
+                        <p className="text-xs leading-5 text-[var(--muted)]">
+                          提交时间：
+                          {" "}
+                          {new Intl.DateTimeFormat("zh-CN", { dateStyle: "short", timeStyle: "short" }).format(
+                            request.updatedAt,
+                          )}
+                        </p>
+                      </div>
+
+                      <div className="mt-4 flex flex-col gap-3 sm:flex-row sm:justify-end">
+                        <form action={rejectHonorAdjustmentRequestAction}>
+                          <input type="hidden" name="requestId" value={request.id} />
+                          <button
+                            type="submit"
+                            className="focus-ring btn-secondary w-full sm:w-auto"
+                          >
+                            驳回申请
+                          </button>
+                        </form>
+                        <form action={approveHonorAdjustmentRequestAction}>
+                          <input type="hidden" name="requestId" value={request.id} />
+                          <button
+                            type="submit"
+                            className="focus-ring btn-primary w-full sm:w-auto"
+                          >
+                            审核通过并生效
+                          </button>
+                        </form>
+                      </div>
+                    </div>
+                  );
+                })
+              ) : (
+                <div className="rounded-[20px] border border-[var(--border-soft)] bg-[rgba(255,250,241,0.82)] px-4 py-4 text-sm leading-6 text-[var(--muted)]">
+                  当前没有待审核的荣誉值申请。
+                </div>
+              )}
+            </div>
+          </div>
+
+          <div className="mt-8 border-t border-[var(--border-soft)] pt-6">
             <h3 className="section-title text-2xl font-semibold">荣誉值调整</h3>
             <p className="mt-2 text-sm leading-6 text-[var(--muted)]">
               荣誉值绑定账号，仅允许管理员在此发放或扣减。每次调整都会记录审计日志。
@@ -286,7 +399,7 @@ export default async function AdminUsersPage({ searchParams }: AdminUsersPagePro
                   </option>
                   {users.map((user) => (
                     <option key={user.id} value={user.id}>
-                      {user.displayName}（当前荣誉值：{user.honor}）
+                      {user.displayName}（当前荣誉值：{formatHonorValue(user.honor)}）
                     </option>
                   ))}
                 </select>
@@ -298,6 +411,7 @@ export default async function AdminUsersPage({ searchParams }: AdminUsersPagePro
                   id="honor-delta"
                   name="delta"
                   type="number"
+                  step="0.01"
                   required
                   className="focus-ring field-input"
                   placeholder="正数为发放，负数为扣减"
