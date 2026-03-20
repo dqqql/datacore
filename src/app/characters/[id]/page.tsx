@@ -227,8 +227,189 @@ export default async function CharacterDetailPage({ params, searchParams }: Char
       description="这里集中处理当前角色的金币、声望、行囊、私设物品交易与规则书物品典当。"
       badge="角色详情"
     >
-      <section className="grid gap-6 xl:grid-cols-[0.95fr_1.05fr]">
-        <article className="panel rounded-[28px] p-6">
+      <section className="panel rounded-[28px] p-6">
+        <div className="flex flex-col gap-3 lg:flex-row lg:items-end lg:justify-between">
+          <div>
+            <h3 className="section-title text-2xl font-semibold">经济数据</h3>
+            <p className="mt-2 max-w-3xl text-sm leading-6 text-[var(--muted)]">
+              把常用的金币、声望和荣誉值入口放到角色详情标题下方，进入页面后就能直接操作；移动端会自动改为纵向排列。
+            </p>
+          </div>
+          <div className="rounded-2xl border border-[var(--border-soft)] bg-[rgba(255,250,241,0.82)] px-4 py-3 text-right">
+            <p className="text-xs font-semibold uppercase tracking-[0.18em] text-[var(--color-ink-700)]">
+              当前账号荣誉
+            </p>
+            <p className="mt-1 text-lg font-semibold text-[var(--color-ink-900)]">
+              {formatHonorValue(user.honor)}
+            </p>
+          </div>
+        </div>
+
+        <div className="mt-5 grid gap-4 xl:grid-cols-[1.02fr_1.18fr]">
+          <article className="rounded-[24px] border border-[var(--border-soft)] bg-[rgba(255,250,241,0.82)] p-5">
+            <div className="flex flex-col gap-2">
+              <h4 className="section-title text-xl font-semibold">金币与声望</h4>
+              <p className="text-sm leading-6 text-[var(--muted)]">
+                角色维度的常用数值改成横向表单，输入空间更宽，也更贴近进入详情页后的第一操作区域。
+              </p>
+            </div>
+
+            <form action={updateCharacterEconomyAction} className="mt-5 space-y-4">
+              <input type="hidden" name="characterId" value={character.id} />
+
+              <div className="grid gap-4 md:grid-cols-2">
+                <div className="space-y-2">
+                  <label className="field-label" htmlFor="hero-gold">金币</label>
+                  <input
+                    id="hero-gold"
+                    name="gold"
+                    type="number"
+                    min={0}
+                    defaultValue={character.gold}
+                    className="focus-ring field-input"
+                  />
+                </div>
+
+                <div className="space-y-2">
+                  <label className="field-label" htmlFor="hero-reputation">声望</label>
+                  <input
+                    id="hero-reputation"
+                    name="reputation"
+                    type="number"
+                    min={0}
+                    defaultValue={character.reputation}
+                    className="focus-ring field-input"
+                  />
+                </div>
+              </div>
+
+              <div className="flex justify-end border-t border-[var(--border-soft)] pt-4">
+                <button
+                  type="submit"
+                  className="focus-ring btn-primary w-full md:w-auto md:min-w-40"
+                >
+                  保存经济数据
+                </button>
+              </div>
+            </form>
+          </article>
+
+          {session.user.role === "PLAYER" ? (
+            <article className="rounded-[24px] border border-[var(--border-soft)] bg-[rgba(255,250,241,0.82)] p-5">
+              <div className="flex flex-col gap-2">
+                <h4 className="section-title text-xl font-semibold">账号荣誉值申请</h4>
+                <p className="text-sm leading-6 text-[var(--muted)]">
+                  荣誉值申请入口现在放在行囊概览上方，目标值与原因可以在同一横向区域里完成填写。
+                </p>
+              </div>
+
+              {honorRequestErrorMessage ? (
+                <div className="status-message mt-4" data-tone="danger">
+                  {honorRequestErrorMessage}
+                </div>
+              ) : null}
+
+              {honorRequestSuccessMessage ? (
+                <div className="status-message mt-4" data-tone="success">
+                  {honorRequestSuccessMessage}
+                </div>
+              ) : null}
+
+              {pendingHonorRequest ? (
+                <div className="mt-4 rounded-[20px] border border-[var(--border-soft)] bg-white/75 px-4 py-4 text-sm leading-6 text-[var(--muted)]">
+                  <p className="font-semibold text-[var(--color-ink-900)]">当前有一条待审核申请</p>
+                  <p className="mt-2">
+                    目标荣誉值：{formatHonorValue(pendingHonorRequest.requestedHonor)}，提交时间：{" "}
+                    {new Intl.DateTimeFormat("zh-CN", { dateStyle: "short", timeStyle: "short" }).format(
+                      pendingHonorRequest.updatedAt,
+                    )}
+                  </p>
+                  <p className="mt-1">申请原因：{pendingHonorRequest.reason}</p>
+                  <p className="mt-1">重新提交会覆盖这条待审核申请。</p>
+                </div>
+              ) : null}
+
+              <form action={submitHonorAdjustmentRequestAction} className="mt-5 space-y-4">
+                <input type="hidden" name="redirectPath" value={`/characters/${character.id}`} />
+
+                <div className="grid gap-4 md:grid-cols-[0.72fr_1.28fr]">
+                  <div className="space-y-2">
+                    <label className="field-label" htmlFor="hero-current-honor">当前账号荣誉值</label>
+                    <input
+                      id="hero-current-honor"
+                      type="text"
+                      value={formatHonorValue(user.honor)}
+                      readOnly
+                      className="field-input cursor-not-allowed opacity-80"
+                    />
+                  </div>
+
+                  <div className="space-y-2">
+                    <label className="field-label" htmlFor="hero-target-honor">申请修改后的荣誉值</label>
+                    <input
+                      id="hero-target-honor"
+                      name="targetHonor"
+                      type="number"
+                      min={0}
+                      step="0.01"
+                      required
+                      defaultValue={pendingHonorRequest?.requestedHonor ?? user.honor}
+                      className="focus-ring field-input"
+                      placeholder="请输入审核通过后应生效的荣誉值"
+                    />
+                  </div>
+                </div>
+
+                <div className="space-y-2">
+                  <label className="field-label" htmlFor="hero-honor-request-reason">申请原因</label>
+                  <textarea
+                    id="hero-honor-request-reason"
+                    name="reason"
+                    rows={3}
+                    required
+                    maxLength={120}
+                    defaultValue={pendingHonorRequest?.reason ?? ""}
+                    className="focus-ring field-textarea"
+                    placeholder="例如：完成活动结算后，需要将账号荣誉值修正为 12.5"
+                  />
+                </div>
+
+                <div className="flex justify-end border-t border-[var(--border-soft)] pt-4">
+                  <button
+                    type="submit"
+                    className="focus-ring btn-primary w-full md:w-auto md:min-w-48"
+                  >
+                    {pendingHonorRequest ? "更新待审核申请" : "提交荣誉值申请"}
+                  </button>
+                </div>
+              </form>
+            </article>
+          ) : (
+            <article className="rounded-[24px] border border-[var(--border-soft)] bg-[rgba(255,250,241,0.82)] p-5">
+              <div className="flex h-full flex-col justify-between gap-4">
+                <div className="flex flex-col gap-2">
+                  <h4 className="section-title text-xl font-semibold">账号荣誉值</h4>
+                  <p className="text-sm leading-6 text-[var(--muted)]">
+                    这里展示当前账号荣誉值。管理员如需直接发放或扣减，可前往后台的账号与荣誉管理页面处理。
+                  </p>
+                </div>
+
+                <div className="rounded-[20px] border border-[var(--border-soft)] bg-white/75 px-4 py-5">
+                  <p className="text-xs font-semibold uppercase tracking-[0.18em] text-[var(--color-ink-700)]">
+                    当前荣誉值
+                  </p>
+                  <p className="mt-2 text-3xl font-semibold text-[var(--color-ink-900)]">
+                    {formatHonorValue(user.honor)}
+                  </p>
+                </div>
+              </div>
+            </article>
+          )}
+        </div>
+      </section>
+
+      <section className="mt-6 space-y-6">
+        <article className="hidden panel rounded-[28px] p-6">
           <h3 className="section-title text-2xl font-semibold">经济数据</h3>
           <p className="mt-2 text-sm leading-6 text-[var(--muted)]">
             金币与声望允许玩家自行维护，荣誉值则以账号维度提交审核申请。所有修改都会写入后台审计日志。
